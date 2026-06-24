@@ -1,0 +1,871 @@
+@import "tailwindcss";
+
+/* ============================================================
+   INVOICEFORGE — Design System Tokens
+   ============================================================ */
+@theme {
+    /* Workspace colors */
+    --color-workspace: #1a1a2e;
+    --color-workspace-secondary: #16213e;
+    --color-paper: #ffffff;
+
+    /* Panel colors */
+    --color-panel: #16213e;
+    --color-panel-border: #0f3460;
+    --color-panel-text: #e0e0e0;
+    --color-panel-muted: #8892a4;
+    --color-panel-hover: #1a2d4f;
+    --color-panel-active: #1e3a60;
+
+    /* Accent palette */
+    --color-accent: #00b4d8;
+    --color-accent-hover: #0096c7;
+    --color-accent-dim: rgba(0, 180, 216, 0.15);
+
+    /* Status colors */
+    --color-danger: #e63946;
+    --color-danger-dim: rgba(230, 57, 70, 0.15);
+    --color-success: #2ec4b6;
+    --color-success-dim: rgba(46, 196, 182, 0.15);
+    --color-warning: #ff9f1c;
+    --color-warning-dim: rgba(255, 159, 28, 0.15);
+
+    /* Selection & guides */
+    --color-selection: #00b4d8;
+    --color-guide: #00b4d8;
+    --color-out-of-bounds: #e63946;
+
+    /* Font families */
+    --font-sans: "Inter", "Noto Sans", sans-serif;
+    --font-khmer: "Noto Sans Khmer", "Noto Sans", sans-serif;
+
+    /* Shadows */
+    --shadow-paper:
+        0 4px 32px rgba(0, 0, 0, 0.35), 0 1px 8px rgba(0, 0, 0, 0.2);
+    --shadow-panel: 2px 0 16px rgba(0, 0, 0, 0.3);
+    --shadow-block-selected: 0 0 0 2px #00b4d8;
+    --shadow-dropdown: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+    --transition-slow: 350ms ease;
+}
+
+/* ============================================================
+   Base Reset & Root
+   ============================================================ */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: "Inter", "Noto Sans", sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--color-panel-text);
+    background-color: var(--color-workspace);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   Scrollbar Styling
+   ============================================================ */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--color-panel-border);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent);
+}
+
+/* ============================================================
+   App Layout
+   ============================================================ */
+.app-layout {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.app-main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* ============================================================
+   Panel Base Styles
+   ============================================================ */
+.panel {
+    background: var(--color-panel);
+    border-color: var(--color-panel-border);
+    color: var(--color-panel-text);
+}
+
+.panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-panel-border);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-panel-muted);
+}
+
+/* ============================================================
+   Button Styles
+   ============================================================ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: 1px solid transparent;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.btn-icon {
+    padding: 6px;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--color-panel-text);
+    border-color: transparent;
+}
+.btn-ghost:hover {
+    background: var(--color-panel-hover);
+    color: #ffffff;
+}
+.btn-ghost.active {
+    background: var(--color-accent-dim);
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+}
+
+.btn-accent {
+    background: var(--color-accent);
+    color: #0a1628;
+    font-weight: 600;
+}
+.btn-accent:hover {
+    background: var(--color-accent-hover);
+}
+
+.btn-danger {
+    background: transparent;
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+}
+.btn-danger:hover {
+    background: var(--color-danger-dim);
+}
+
+.btn-panel {
+    background: var(--color-panel-hover);
+    color: var(--color-panel-text);
+    border-color: var(--color-panel-border);
+}
+.btn-panel:hover {
+    background: var(--color-panel-active);
+    color: #ffffff;
+}
+
+/* ============================================================
+   Input Styles
+   ============================================================ */
+.inp {
+    width: 100%;
+    padding: 5px 8px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--color-panel-border);
+    border-radius: 5px;
+    color: var(--color-panel-text);
+    font-size: 12px;
+    font-family: inherit;
+    transition: border-color var(--transition-fast);
+    outline: none;
+}
+
+.inp:focus {
+    border-color: var(--color-accent);
+    background: rgba(0, 180, 216, 0.05);
+}
+
+.inp::placeholder {
+    color: var(--color-panel-muted);
+}
+
+select.inp option {
+    background: var(--color-panel);
+    color: var(--color-panel-text);
+}
+
+/* ============================================================
+   Divider
+   ============================================================ */
+.divider {
+    height: 1px;
+    background: var(--color-panel-border);
+    margin: 8px 0;
+}
+
+/* ============================================================
+   Badge
+   ============================================================ */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* ============================================================
+   Block card in library
+   ============================================================ */
+.block-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 7px;
+    cursor: grab;
+    transition:
+        background var(--transition-fast),
+        transform var(--transition-fast);
+    user-select: none;
+}
+
+.block-item:hover {
+    background: var(--color-panel-hover);
+}
+
+.block-item:active {
+    cursor: grabbing;
+    transform: scale(0.97);
+}
+
+.block-item-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-accent-dim);
+    color: var(--color-accent);
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   Inspector Tab Navigation
+   ============================================================ */
+.inspector-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--color-panel-border);
+    overflow-x: auto;
+}
+
+.inspector-tab {
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    color: var(--color-panel-muted);
+    transition: all var(--transition-fast);
+    background: transparent;
+    border: none;
+}
+
+.inspector-tab:hover {
+    background: var(--color-panel-hover);
+    color: var(--color-panel-text);
+}
+
+.inspector-tab.active {
+    background: var(--color-accent-dim);
+    color: var(--color-accent);
+}
+
+/* ============================================================
+   Inspector Fields
+   ============================================================ */
+.field-group {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--color-panel-border);
+}
+
+.field-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-panel-muted);
+    margin-bottom: 8px;
+}
+
+.field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.field-single {
+    margin-bottom: 6px;
+}
+
+.field-unit {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--color-panel-border);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.field-unit .inp {
+    border: none;
+    background: transparent;
+    border-radius: 0;
+}
+
+.field-unit-label {
+    padding: 0 7px;
+    font-size: 10px;
+    color: var(--color-panel-muted);
+    background: rgba(0, 0, 0, 0.2);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    border-left: 1px solid var(--color-panel-border);
+}
+
+/* ============================================================
+   Color Swatch
+   ============================================================ */
+.color-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    border: 1px solid var(--color-panel-border);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   Canvas Block Selection
+   ============================================================ */
+.canvas-block {
+    position: absolute;
+    cursor: move;
+}
+
+.canvas-block.selected {
+    outline: 2px solid var(--color-selection);
+    outline-offset: 1px;
+}
+
+.canvas-block.locked {
+    cursor: default;
+}
+
+.canvas-block.out-of-bounds {
+    outline-color: var(--color-out-of-bounds);
+}
+
+/* ============================================================
+   Alignment Guide Lines
+   ============================================================ */
+.guide-line {
+    position: absolute;
+    pointer-events: none;
+    z-index: 9999;
+    background: var(--color-guide);
+    opacity: 0.8;
+}
+
+.guide-line-h {
+    height: 1px;
+    left: 0;
+    right: 0;
+}
+
+.guide-line-v {
+    width: 1px;
+    top: 0;
+    bottom: 0;
+}
+
+/* ============================================================
+   Resize Handles
+   ============================================================ */
+.resize-handle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--color-selection);
+    border: 1px solid #ffffff;
+    border-radius: 1px;
+    z-index: 100;
+}
+
+.rotate-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--color-selection);
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    z-index: 100;
+    cursor: crosshair;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* ============================================================
+   Context Menu
+   ============================================================ */
+.context-menu {
+    position: fixed;
+    background: var(--color-panel);
+    border: 1px solid var(--color-panel-border);
+    border-radius: 8px;
+    padding: 4px;
+    min-width: 180px;
+    box-shadow: var(--shadow-dropdown);
+    z-index: 10000;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 5px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--color-panel-text);
+    transition: background var(--transition-fast);
+}
+
+.context-menu-item:hover {
+    background: var(--color-panel-hover);
+}
+
+.context-menu-item.danger {
+    color: var(--color-danger);
+}
+
+.context-menu-item.danger:hover {
+    background: var(--color-danger-dim);
+}
+
+.context-menu-separator {
+    height: 1px;
+    background: var(--color-panel-border);
+    margin: 3px 6px;
+}
+
+/* ============================================================
+   Zoom Controls
+   ============================================================ */
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--color-panel);
+    border: 1px solid var(--color-panel-border);
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.zoom-value {
+    min-width: 48px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-panel-text);
+}
+
+/* ============================================================
+   TopBar
+   ============================================================ */
+.topbar {
+    height: 52px;
+    background: var(--color-workspace-secondary);
+    border-bottom: 1px solid var(--color-panel-border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+}
+
+.topbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--color-accent);
+    letter-spacing: -0.02em;
+    margin-right: 8px;
+}
+
+.topbar-sep {
+    width: 1px;
+    height: 24px;
+    background: var(--color-panel-border);
+    margin: 0 4px;
+}
+
+.topbar-select {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--color-panel-border);
+    border-radius: 6px;
+    color: var(--color-panel-text);
+    font-size: 12px;
+    padding: 4px 8px;
+    cursor: pointer;
+    outline: none;
+    font-family: inherit;
+    transition: border-color var(--transition-fast);
+}
+
+.topbar-select:hover,
+.topbar-select:focus {
+    border-color: var(--color-accent);
+}
+
+.format-btn {
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--color-panel-border);
+    background: transparent;
+    color: var(--color-panel-muted);
+    transition: all var(--transition-fast);
+}
+
+.format-btn:hover {
+    background: var(--color-panel-hover);
+    color: var(--color-panel-text);
+}
+
+.format-btn.active {
+    background: var(--color-accent-dim);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+/* ============================================================
+   Layer Item
+   ============================================================ */
+.layer-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 12px;
+    transition: background var(--transition-fast);
+}
+
+.layer-item:hover {
+    background: var(--color-panel-hover);
+}
+
+.layer-item.selected {
+    background: var(--color-accent-dim);
+    color: var(--color-accent);
+}
+
+/* ============================================================
+   Tooltip
+   ============================================================ */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    z-index: 9999;
+}
+
+[data-tooltip]:hover::after {
+    opacity: 1;
+}
+
+/* ============================================================
+   Animations
+   ============================================================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse-accent {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 180, 216, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(0, 180, 216, 0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 200ms ease both;
+}
+.animate-slide-in {
+    animation: slideIn 200ms ease both;
+}
+.animate-pulse-accent {
+    animation: pulse-accent 2s infinite;
+}
+
+/* ============================================================
+   Toggle Switch
+   ============================================================ */
+.toggle {
+    position: relative;
+    display: inline-flex;
+    width: 34px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--color-panel-border);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.toggle input:checked + .toggle-track {
+    background: var(--color-accent);
+}
+
+.toggle-track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+    transition: transform var(--transition-fast);
+}
+
+.toggle input:checked + .toggle-track::after {
+    transform: translateX(16px);
+}
+
+/* ============================================================
+   Slider
+   ============================================================ */
+.slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-panel-border);
+    outline: none;
+    cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================
+   Empty State
+   ============================================================ */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--color-panel-muted);
+}
+
+.empty-state-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(0, 180, 216, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-panel-muted);
+}
+
+/* ============================================================
+   Export / Print Mode Overrides
+   ============================================================ */
+.export-active .print-hidden {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+.export-active .margin-indicator {
+    display: none !important;
+}
+
+/* ============================================================
+   Print Stylesheet — hides all UI, shows only the paper
+   ============================================================ */
+@media print {
+    @page {
+        margin: 0 !important;
+    }
+
+    /* Hide all UI chrome, guide lines, selection highlights, etc. */
+    .topbar,
+    .app-main > aside,
+    .zoom-controls,
+    .context-menu,
+    .margin-indicator,
+    .resize-handle,
+    .rotate-handle,
+    .guide-line,
+    .canvas-block.selected,
+    .print-hidden,
+    [data-tooltip]::after {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    /* Reset app layout containers to static block flow so height collapses perfectly */
+    html,
+    body,
+    #app,
+    .app-layout,
+    .app-main,
+    .workspace,
+    .workspace > div {
+        display: block !important;
+        position: static !important;
+        width: auto !important;
+        height: auto !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        transform: none !important;
+    }
+
+    /* The paper — preserve width/height inline styles, remove shadow and zoom scale transform */
+    #canvas-paper {
+        display: block !important;
+        position: relative !important;
+        box-shadow: none !important;
+        transform: none !important;
+        margin: 0 !important;
+        overflow: visible !important;
+    }
+
+    /* Ensure all blocks and their contents are visible */
+    .canvas-block {
+        overflow: visible !important;
+    }
+}

@@ -1,0 +1,125 @@
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import {
+  PAPER_FORMATS,
+  DEFAULT_FORMAT,
+  DEFAULT_ORIENTATION,
+  getFormatDimensions,
+} from "../constants/paperFormats.js";
+
+export const useCanvasStore = defineStore("canvas", () => {
+  // Canvas instance (Fabric.js Canvas object)
+  const fabricCanvas = ref(null);
+
+  // Zoom and pan
+  const zoom = ref(1);
+  const panX = ref(0);
+  const panY = ref(0);
+  const isPanning = ref(false);
+
+  // Paper format
+  const formatId = ref(DEFAULT_FORMAT);
+  const orientation = ref(DEFAULT_ORIENTATION);
+
+  // UI toggles
+  const showRulers = ref(true);
+  const showGrid = ref(false);
+  const snapToGrid = ref(false);
+  const gridSize = ref(10);
+  const showAlignmentGuides = ref(true);
+  const previewMode = ref(false);
+  const fillMode = ref(false);
+  const editingBlockId = ref(null);
+
+  // Computed
+  const paperDimensions = computed(() =>
+    getFormatDimensions(formatId.value, orientation.value),
+  );
+
+  const currentFormat = computed(() => PAPER_FORMATS[formatId.value]);
+
+  // Actions
+  function setFabricCanvas(canvas) {
+    fabricCanvas.value = canvas;
+  }
+
+  function setZoom(val) {
+    zoom.value = Math.min(Math.max(val, 0.1), 5);
+    if (fabricCanvas.value) {
+      fabricCanvas.value.setZoom(zoom.value);
+      fabricCanvas.value.renderAll();
+    }
+  }
+
+  function zoomIn() {
+    setZoom(zoom.value + 0.1);
+  }
+  function zoomOut() {
+    setZoom(zoom.value - 0.1);
+  }
+  function resetZoom() {
+    setZoom(1);
+  }
+
+  function setPan(x, y) {
+    panX.value = x;
+    panY.value = y;
+  }
+
+  function setFormat(newFormatId) {
+    formatId.value = newFormatId;
+  }
+
+  function setOrientation(newOrientation) {
+    orientation.value = newOrientation;
+  }
+
+  function toggleOrientation() {
+    orientation.value =
+      orientation.value === "portrait" ? "landscape" : "portrait";
+  }
+
+  function togglePreviewMode() {
+    previewMode.value = !previewMode.value;
+  }
+
+  function toggleFillMode() {
+    fillMode.value = !fillMode.value;
+  }
+
+  function setFillMode(val) {
+    fillMode.value = val;
+  }
+
+  return {
+    fabricCanvas,
+    zoom,
+    panX,
+    panY,
+    isPanning,
+    formatId,
+    orientation,
+    showRulers,
+    showGrid,
+    snapToGrid,
+    gridSize,
+    showAlignmentGuides,
+    previewMode,
+    fillMode,
+    editingBlockId,
+    paperDimensions,
+    currentFormat,
+    setFabricCanvas,
+    setZoom,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    setPan,
+    setFormat,
+    setOrientation,
+    toggleOrientation,
+    togglePreviewMode,
+    toggleFillMode,
+    setFillMode,
+  };
+});
