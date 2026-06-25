@@ -53,38 +53,14 @@ export const BLOCK_META = {
     name: "Background",
     description: "Colored section background",
   },
-  page_break: {
-    icon: "Scissors",
-    name: "Page Break",
-    description: "Force new page in PDF",
-  },
+
   page_number: {
     icon: "Hash",
     name: "Page Number",
     description: "Auto page numbering",
   },
 
-  // Company & Client
-  company_info: {
-    icon: "Building2",
-    name: "Company Info",
-    description: "Logo + name + address + contact",
-  },
-  client_info: {
-    icon: "User",
-    name: "Client Info",
-    description: "Name + address + contact",
-  },
-  header_grid: {
-    icon: "PanelTop",
-    name: "Header Grid",
-    description: "Multi-column info grid, fill mode",
-  },
-  field_row: {
-    icon: "Tag",
-    name: "Field Row",
-    description: "Label + value pair",
-  },
+
 
   // Document
   document_title: {

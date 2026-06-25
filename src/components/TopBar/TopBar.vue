@@ -6,6 +6,7 @@ import { useTemplateStore } from "../../stores/template.js";
 import { useHistoryStore } from "../../stores/history.js";
 import { useBlockStore } from "../../stores/blocks.js";
 import { useFormatMigration } from "../../composables/useFormatMigration.js";
+import { usePreviewStore } from "../../stores/preview.js";
 import {
     FileText,
     Building2,
@@ -39,6 +40,7 @@ const templateStore = useTemplateStore();
 const historyStore = useHistoryStore();
 const blockStore = useBlockStore();
 const { switchFormat, switchOrientation } = useFormatMigration();
+const previewStore = usePreviewStore();
 
 const showConfirmModal = ref(false);
 const confirmTitle = ref("");
@@ -66,9 +68,43 @@ function handleCancelModal() {
     showConfirmModal.value = false;
 }
 
-const exportMenuOpen = ref(false);
+const importMenuOpen = ref(false);
+const downloadMenuOpen = ref(false);
 const showSaveModal = ref(false);
 const saveName = ref(templateStore.currentTemplateName);
+
+const importBtnEl = ref(null);
+const downloadBtnEl = ref(null);
+const importMenuPosition = ref({ top: "0px", right: "0px" });
+const downloadMenuPosition = ref({ top: "0px", right: "0px" });
+
+function toggleImportMenu() {
+    importMenuOpen.value = !importMenuOpen.value;
+    if (importMenuOpen.value) {
+        downloadMenuOpen.value = false;
+        if (importBtnEl.value) {
+            const rect = importBtnEl.value.getBoundingClientRect();
+            importMenuPosition.value = {
+                top: `${rect.bottom + 4}px`,
+                right: `${window.innerWidth - rect.right}px`,
+            };
+        }
+    }
+}
+
+function toggleDownloadMenu() {
+    downloadMenuOpen.value = !downloadMenuOpen.value;
+    if (downloadMenuOpen.value) {
+        importMenuOpen.value = false;
+        if (downloadBtnEl.value) {
+            const rect = downloadBtnEl.value.getBoundingClientRect();
+            downloadMenuPosition.value = {
+                top: `${rect.bottom + 4}px`,
+                right: `${window.innerWidth - rect.right}px`,
+            };
+        }
+    }
+}
 
 // ─── Export loading & toast ───────────────────────────────────
 const isExporting = ref(false);
@@ -128,9 +164,9 @@ function handleRedo() {
     if (snapshot) blockStore.setBlocks(snapshot);
 }
 
-// ─── Save to browser (localStorage) ──────────────────────────
+// ─── Save: Show Save Modal ───────────────────────────────────
 function handleSave() {
-    saveName.value = templateStore.currentTemplateName;
+    saveName.value = templateStore.currentTemplateName || "Untitled Template";
     showSaveModal.value = true;
 }
 
@@ -168,21 +204,28 @@ function buildSchema(name) {
 // ─── Export (PDF / PNG / JSON) ────────────────────────────────
 function exportPDF() {
     document.dispatchEvent(new CustomEvent("canvas:export-pdf"));
-    exportMenuOpen.value = false;
+    downloadMenuOpen.value = false;
 }
 function exportPNG() {
     document.dispatchEvent(new CustomEvent("canvas:export-png"));
-    exportMenuOpen.value = false;
+    downloadMenuOpen.value = false;
+}
+function exportDOCX() {
+    document.dispatchEvent(new CustomEvent("canvas:export-docx"));
+    downloadMenuOpen.value = false;
+}
+function exportCSV() {
+    document.dispatchEvent(new CustomEvent("canvas:export-csv"));
+    downloadMenuOpen.value = false;
 }
 function exportJSON() {
     const schema = buildSchema(templateStore.currentTemplateName);
     templateStore.exportAsJson(schema);
-    exportMenuOpen.value = false;
 }
 
 // ─── Import from JSON file ────────────────────────────────────
 function importFromFile() {
-    exportMenuOpen.value = false;
+    importMenuOpen.value = false;
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json,application/json";
@@ -223,6 +266,162 @@ function importFromFile() {
     input.click();
 }
 
+// ─── Import from CSV file ─────────────────────────────────────
+function importCSVFromFile() {
+    importMenuOpen.value = false;
+    
+    // Find item table block to import into
+    const tableBlock = blockStore.selectedBlock?.type === 'item_table' 
+        ? blockStore.selectedBlock 
+        : blockStore.blocks.find(b => b.type === 'item_table');
+        
+    if (!tableBlock) {
+        showToast("✗ No Item Table found to import data into. Please select or add an Item Table block first.", "error");
+        return;
+    }
+    
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".csv,text/csv";
+    input.style.display = "none";
+    document.body.appendChild(input);
+
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        document.body.removeChild(input);
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const text = evt.target.result;
+                const lines = parseCSVText(text);
+                if (lines.length < 2) {
+                    throw new Error("CSV file must contain a header row and at least one data row.");
+                }
+                
+                const headers = lines[0].map(h => h.trim().toLowerCase());
+                
+                // Map headers to column IDs
+                const headerMap = {};
+                headers.forEach((header, idx) => {
+                    if (header.includes("description") || header.includes("desc") || header.includes("item")) {
+                        headerMap.description = idx;
+                    } else if (header.includes("qty") || header.includes("quantity")) {
+                        headerMap.qty = idx;
+                    } else if (header.includes("price") || header.includes("rate") || header.includes("unit")) {
+                        headerMap.unit_price = idx;
+                    } else if (header.includes("discount")) {
+                        headerMap.discount = idx;
+                    } else if (header.includes("tax")) {
+                        headerMap.tax = idx;
+                    } else if (header.includes("no") || header.includes("num")) {
+                        headerMap.no = idx;
+                    } else if (header.includes("total") || header.includes("amount")) {
+                        headerMap.total = idx;
+                    }
+                });
+                
+                // Fallback column indexing if headers didn't match cleanly
+                if (Object.keys(headerMap).length === 0) {
+                    const visibleCols = (tableBlock.columns || []).filter(c => c.visible !== false);
+                    visibleCols.forEach((col, idx) => {
+                        if (idx < headers.length) {
+                            headerMap[col.id] = idx;
+                        }
+                    });
+                }
+
+                const importedItems = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const row = lines[i];
+                    if (row.length === 0 || (row.length === 1 && row[0] === "")) continue; // Skip empty rows
+                    
+                    const item = {};
+                    
+                    // Fill known mapped fields
+                    Object.entries(headerMap).forEach(([colId, idx]) => {
+                        if (idx < row.length) {
+                            item[colId] = row[idx].trim();
+                        }
+                    });
+                    
+                    // Defaults for columns that are present in the table Block but not imported
+                    tableBlock.columns.forEach(col => {
+                        if (item[col.id] === undefined) {
+                            item[col.id] = "";
+                        }
+                    });
+                    
+                    // Auto compute total if qty and price exist
+                    if (item.total === "" || item.total === undefined) {
+                        const q = parseFloat(item.qty || 0);
+                        const p = parseFloat(item.unit_price || 0);
+                        if (!isNaN(q) && !isNaN(p)) {
+                            item.total = String(q * p);
+                        }
+                    }
+                    
+                    importedItems.push(item);
+                }
+                
+                // Update table block in store
+                blockStore.updateBlock(tableBlock.id, { 
+                    items: importedItems,
+                    emptyRows: Math.max(importedItems.length, tableBlock.emptyRows || 3)
+                });
+                historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
+                showToast(`✓ Imported ${importedItems.length} items from "${file.name}"`, "success");
+            } catch (err) {
+                showToast(`✗ Failed to load CSV: ${err.message}`, "error");
+            }
+        };
+        reader.onerror = () => showToast("✗ Error reading file", "error");
+        reader.readAsText(file);
+    };
+
+    input.click();
+}
+
+/**
+ * Simple CSV parser that handles comma separation and quoted values correctly.
+ */
+function parseCSVText(text) {
+    const lines = [];
+    let row = [""];
+    let inQuotes = false;
+    
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+        
+        if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+                row[row.length - 1] += '"';
+                i++; // skip next quote
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            row.push("");
+        } else if ((char === '\r' || char === '\n') && !inQuotes) {
+            if (char === '\r' && nextChar === '\n') {
+                i++; // skip \n
+            }
+            lines.push(row);
+            row = [""];
+        } else {
+            row[row.length - 1] += char;
+        }
+    }
+    
+    if (row.length > 1 || row[0] !== "") {
+        lines.push(row);
+    }
+    
+    return lines;
+}
+
 // ─── Print ───────────────────────────────────────────────────
 async function handlePrint() {
     const backupZoom = canvasStore.zoom;
@@ -243,6 +442,70 @@ async function handlePrint() {
         canvasStore.setZoom(backupZoom);
         canvasStore.setFillMode(backupFillMode);
     }, 500);
+}
+
+// ─── Template Select & Load ───────────────────────────────────
+const activeTemplateSelectValue = computed(() => {
+    return templateStore.currentTemplateId || 'Custom';
+});
+
+function handleTemplateSelectChange(e) {
+    const val = e.target.value;
+    const previousVal = activeTemplateSelectValue.value;
+    
+    const revertSelect = () => {
+        e.target.value = previousVal;
+    };
+
+    if (val === 'Custom') {
+        if (blockStore.blocks.length === 0) {
+            templateStore.currentTemplateId = null;
+            templateStore.currentTemplateName = "Untitled Template";
+            const { width, height } = canvasStore.paperDimensions;
+            blockStore.loadPreset('Custom', width, height);
+            historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
+            return;
+        }
+        triggerConfirm(
+            "Reset Canvas",
+            "Reset canvas to a blank Custom layout? This will overwrite your current changes.",
+            "warning",
+            () => {
+                templateStore.currentTemplateId = null;
+                templateStore.currentTemplateName = "Untitled Template";
+                const { width, height } = canvasStore.paperDimensions;
+                blockStore.loadPreset('Custom', width, height);
+                historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
+            },
+            revertSelect
+        );
+    } else {
+        const template = templateStore.templates.find(t => t.id === val);
+        if (!template) return;
+        
+        triggerConfirm(
+            "Load Template",
+            `Load saved template "${template.name}"? This will overwrite your current canvas.`,
+            "warning",
+            () => {
+                const schema = template.schema;
+                if (schema.blocks) blockStore.setBlocks(schema.blocks);
+                if (schema.format) canvasStore.setFormat(schema.format);
+                if (schema.orientation) canvasStore.setOrientation(schema.orientation);
+                if (schema.settings) {
+                    if (schema.settings.currency) settingsStore.setCurrency(schema.settings.currency);
+                    if (schema.settings.globalFont) settingsStore.setGlobalFont(schema.settings.globalFont);
+                    if (schema.settings.globalFontSize) settingsStore.setGlobalFontSize(schema.settings.globalFontSize);
+                    if (schema.settings.documentType) settingsStore.setDocumentType(schema.settings.documentType);
+                }
+                templateStore.currentTemplateId = template.id;
+                templateStore.currentTemplateName = template.name;
+                historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
+                showToast(`✓ "${template.name}" loaded`, "success");
+            },
+            revertSelect
+        );
+    }
 }
 
 // ─── Document type & reset ────────────────────────────────────
@@ -492,7 +755,7 @@ const reverseTranslationMap = {
 };
 
 const isCurrentKhmer = computed(() => {
-    return settingsStore.globalFont === '"Noto Sans Khmer", sans-serif';
+    return settingsStore.language === 'kh';
 });
 
 function translateText(text, targetLang) {
@@ -519,6 +782,7 @@ function translateText(text, targetLang) {
 function translateToKhmer() {
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
     
+    settingsStore.setLanguage('kh');
     settingsStore.setGlobalFont('"Noto Sans Khmer", sans-serif');
     if (settingsStore.currency === 'USD') {
         settingsStore.setCurrency('KHR');
@@ -593,6 +857,7 @@ function translateToKhmer() {
 function translateToEnglish() {
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
     
+    settingsStore.setLanguage('en');
     settingsStore.setGlobalFont('"Noto Sans", sans-serif');
     if (settingsStore.currency === 'KHR') {
         settingsStore.setCurrency('USD');
@@ -756,6 +1021,35 @@ function execFormatting(command, value = null) {
 
         <div class="topbar-sep" />
 
+        <!-- Mode Toggle Switcher -->
+        <div class="flex bg-[rgba(0,0,0,0.18)] border border-panel-border rounded-md p-[2px] gap-px ml-2 mr-2">
+            <button
+                class="formatting-btn font-medium"
+                style="width: 65px; height: 26px; font-size: 11px;"
+                :class="{ active: !previewStore.isPreviewMode }"
+                @click="previewStore.setPreviewMode(false)"
+            >
+                Design
+            </button>
+            <button
+                class="formatting-btn font-medium"
+                style="width: 65px; height: 26px; font-size: 11px;"
+                :class="{ active: previewStore.isPreviewMode }"
+                @click="previewStore.setPreviewMode(true)"
+            >
+                Preview
+            </button>
+            <button
+                class="formatting-btn font-medium"
+                style="width: 65px; height: 26px; font-size: 11px;"
+                @click="handlePrint"
+            >
+                Print
+            </button>
+        </div>
+
+        <div class="topbar-sep" />
+
         <!-- Company -->
         <div class="flex items-center gap-1">
             <Building2 :size="13" class="text-panel-muted" />
@@ -767,19 +1061,22 @@ function execFormatting(command, value = null) {
             />
         </div>
 
-        <!-- Document Type -->
+        <!-- Template Selection -->
         <select
-            :value="settingsStore.documentType"
+            :value="activeTemplateSelectValue"
             class="topbar-select"
-            @change="handleDocumentTypeChange"
+            @change="handleTemplateSelectChange"
         >
-            <option
-                v-for="dt in settingsStore.documentTypes"
-                :key="dt"
-                :value="dt"
-            >
-                {{ dt }}
-            </option>
+            <option value="Custom">Custom</option>
+            <optgroup v-if="templateStore.templates.length > 0" label="Saved Templates">
+                <option
+                    v-for="tpl in templateStore.templates"
+                    :key="tpl.id"
+                    :value="tpl.id"
+                >
+                    {{ tpl.name }}
+                </option>
+            </optgroup>
         </select>
 
         <!-- Currency -->
@@ -1023,15 +1320,6 @@ function execFormatting(command, value = null) {
             Reset
         </button>
 
-        <!-- Print -->
-        <button
-            class="btn btn-ghost"
-            data-tooltip="Print (Ctrl+P)"
-            @click="handlePrint"
-        >
-            <Printer :size="13" />
-            Print
-        </button>
 
         <div class="topbar-sep" />
 
@@ -1045,47 +1333,98 @@ function execFormatting(command, value = null) {
             {{ isCurrentKhmer ? 'Translate to English' : 'Translate to Khmer' }}
         </button>
 
-        <!-- Export / Import dropdown -->
-        <div class="relative">
+        <!-- Import dropdown -->
+        <div class="relative" ref="importBtnEl">
+            <button
+                class="btn btn-ghost"
+                @click="toggleImportMenu"
+            >
+                <Upload :size="13" />
+                Import
+                <ChevronDown :size="11" />
+            </button>
+            <Teleport to="body">
+                <div
+                    v-if="importMenuOpen"
+                    class="context-menu animate-fade-in"
+                    :style="{
+                        position: 'fixed',
+                        top: importMenuPosition.top,
+                        right: importMenuPosition.right,
+                        left: 'auto',
+                        minWidth: '210px',
+                        zIndex: 10000
+                    }"
+                    @mouseleave="importMenuOpen = false"
+                >
+                    <div class="context-menu-label">Import From</div>
+                    <div class="context-menu-item" @click="importFromFile">
+                        <FolderOpen
+                            :size="13"
+                            style="display: inline; margin-right: 6px"
+                        />
+                        Load Template (.json)
+                    </div>
+                    <div class="context-menu-item" @click="importCSVFromFile">
+                        📊 Import Table Data (.csv)
+                    </div>
+                </div>
+            </Teleport>
+        </div>
+
+        <!-- Export button (JSON) -->
+        <button
+            class="btn btn-ghost"
+            data-tooltip="Export editable template as JSON"
+            @click="exportJSON"
+        >
+            <Download :size="13" />
+            Export (JSON)
+        </button>
+
+        <div class="topbar-sep" />
+
+        <!-- Download dropdown (Documents) -->
+        <div class="relative" ref="downloadBtnEl">
             <button
                 class="btn btn-ghost"
                 :disabled="isExporting"
-                @click="exportMenuOpen = !exportMenuOpen"
+                @click="toggleDownloadMenu"
             >
                 <Loader v-if="isExporting" :size="13" class="spin" />
-                <Upload v-else :size="13" />
-                {{ isExporting ? "Exporting…" : "Export" }}
+                <FileText v-else :size="13" />
+                {{ isExporting ? "Exporting…" : "Download" }}
                 <ChevronDown :size="11" />
             </button>
-            <div
-                v-if="exportMenuOpen"
-                class="context-menu animate-fade-in"
-                style="
-                    top: calc(100% + 4px);
-                    right: 0;
-                    left: auto;
-                    min-width: 200px;
-                "
-                @mouseleave="exportMenuOpen = false"
-            >
-                <div class="context-menu-item" @click="exportPDF">
-                    📄 Export as PDF
+            <Teleport to="body">
+                <div
+                    v-if="downloadMenuOpen"
+                    class="context-menu animate-fade-in"
+                    :style="{
+                        position: 'fixed',
+                        top: downloadMenuPosition.top,
+                        right: downloadMenuPosition.right,
+                        left: 'auto',
+                        minWidth: '210px',
+                        zIndex: 10000
+                    }"
+                    @mouseleave="downloadMenuOpen = false"
+                >
+                    <div class="context-menu-label">Download As</div>
+                    <div class="context-menu-item" @click="exportPDF">
+                        📄 PDF  <span class="context-menu-hint">Best for sharing</span>
+                    </div>
+                    <div class="context-menu-item" @click="exportDOCX">
+                        📝 Word (.docx)  <span class="context-menu-hint">Editable</span>
+                    </div>
+                    <div class="context-menu-item" @click="exportPNG">
+                        🖼 Image (.png)  <span class="context-menu-hint">High quality</span>
+                    </div>
+                    <div class="context-menu-item" @click="exportCSV">
+                        📊 Spreadsheet (.csv)  <span class="context-menu-hint">Table data</span>
+                    </div>
                 </div>
-                <div class="context-menu-item" @click="exportPNG">
-                    🖼 Export as PNG
-                </div>
-                <div class="context-menu-item" @click="exportJSON">
-                    📦 Export as JSON
-                </div>
-                <div class="context-menu-separator" />
-                <div class="context-menu-item" @click="importFromFile">
-                    <FolderOpen
-                        :size="13"
-                        style="display: inline; margin-right: 6px"
-                    />
-                    Import from JSON
-                </div>
-            </div>
+            </Teleport>
         </div>
 
 

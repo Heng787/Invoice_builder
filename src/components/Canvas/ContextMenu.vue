@@ -1,8 +1,10 @@
-<script setup>
+﻿<script setup>
 import { useBlockStore } from '../../stores/blocks.js'
 import { useHistoryStore } from '../../stores/history.js'
 import { Copy, Trash2, Lock, ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, Star } from '@lucide/vue'
 import { onMounted, onUnmounted } from 'vue'
+import { useTranslateUi } from '../../utils/translateUi.js'
+const { translateUi } = useTranslateUi()
 
 const props = defineProps({
   x: { type: Number, required: true },
@@ -77,28 +79,28 @@ onUnmounted(() => window.removeEventListener('click', closeOnOutside))
     @click.stop
   >
     <div class="context-menu-item" @click="duplicate">
-      <Copy :size="13" /> Duplicate
+      <Copy :size="13" /> {{ translateUi('Duplicate') }}
     </div>
     <div class="context-menu-separator" />
     <div class="context-menu-item" @click="bringToFront">
-      <ChevronsUp :size="13" /> Bring to Front
+      <ChevronsUp :size="13" /> {{ translateUi('Bring to Front') }}
     </div>
     <div class="context-menu-item" @click="bringForward">
-      <ArrowUp :size="13" /> Bring Forward
+      <ArrowUp :size="13" /> {{ translateUi('Bring Forward') }}
     </div>
     <div class="context-menu-item" @click="sendBackward">
-      <ArrowDown :size="13" /> Send Backward
+      <ArrowDown :size="13" /> {{ translateUi('Send Backward') }}
     </div>
     <div class="context-menu-item" @click="sendToBack">
-      <ChevronsDown :size="13" /> Send to Back
+      <ChevronsDown :size="13" /> {{ translateUi('Send to Back') }}
     </div>
     <div class="context-menu-separator" />
     <div class="context-menu-item" @click="toggleLock">
-      <Lock :size="13" /> Toggle Lock
+      <Lock :size="13" /> {{ translateUi('Toggle Lock') }}
     </div>
     <div class="context-menu-separator" />
     <div class="context-menu-item danger" @click="deleteBlock">
-      <Trash2 :size="13" /> Delete
+      <Trash2 :size="13" /> {{ translateUi('Delete') }}
     </div>
   </div>
 </template>

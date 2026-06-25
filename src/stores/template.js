@@ -8,6 +8,7 @@ export const useTemplateStore = defineStore("template", () => {
   const templates = ref(loadTemplates());
   const components = ref(loadComponents());
   const currentTemplateName = ref("Untitled Template");
+  const currentTemplateId = ref(null);
   const isDirty = ref(false);
 
   const templateList = computed(() =>
@@ -36,29 +37,42 @@ export const useTemplateStore = defineStore("template", () => {
 
   function saveTemplate(name, schema) {
     const existing = templates.value.find((t) => t.name === name);
+    let id;
     if (existing) {
       existing.schema = schema;
       existing.updatedAt = new Date().toISOString();
+      id = existing.id;
     } else {
+      id = crypto.randomUUID();
       templates.value.push({
-        id: crypto.randomUUID(),
+        id,
         name,
         schema,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
     }
+    currentTemplateId.value = id;
     currentTemplateName.value = name;
     isDirty.value = false;
     persistTemplates();
   }
 
   function loadTemplate(id) {
-    return templates.value.find((t) => t.id === id) ?? null;
+    const t = templates.value.find((t) => t.id === id) ?? null;
+    if (t) {
+      currentTemplateId.value = t.id;
+      currentTemplateName.value = t.name;
+    }
+    return t;
   }
 
   function deleteTemplate(id) {
     templates.value = templates.value.filter((t) => t.id !== id);
+    if (currentTemplateId.value === id) {
+      currentTemplateId.value = null;
+      currentTemplateName.value = "Untitled Template";
+    }
     persistTemplates();
   }
 
@@ -127,6 +141,7 @@ export const useTemplateStore = defineStore("template", () => {
     templates,
     components,
     currentTemplateName,
+    currentTemplateId,
     isDirty,
     templateList,
     saveTemplate,

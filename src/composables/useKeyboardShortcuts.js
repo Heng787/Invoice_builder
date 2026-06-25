@@ -15,7 +15,7 @@ export function useKeyboardShortcuts() {
   function handleKeyDown(e) {
     const tag = document.activeElement?.tagName
     const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
-    const isEditing = document.activeElement?.contentEditable === 'true'
+    const isEditing = document.activeElement?.contentEditable === 'true' || document.activeElement?.isContentEditable
     if (isInput || isEditing) return
 
     const ctrl = e.ctrlKey || e.metaKey

@@ -1,6 +1,23 @@
 <script setup>
 import { computed } from 'vue'
 import { useBlockStore } from '../../stores/blocks.js'
+import { usePreviewStore } from '../../stores/preview.js'
+
+const previewStore = usePreviewStore()
+
+function getSignatureValue(bindingKey, designFallback) {
+  if (previewStore.isPreviewMode) {
+    if (!bindingKey) return designFallback;
+    const dataVal = previewStore.previewData[bindingKey];
+    if (dataVal !== undefined && dataVal !== null && dataVal !== '') {
+      return String(dataVal);
+    }
+    return designFallback;
+  }
+  return designFallback;
+}
+
+const getPlaceholder = (key) => key ? `{{${key}}}` : "";
 
 const props = defineProps({
   block: { type: Object, required: true },
@@ -56,10 +73,21 @@ const label = computed(() => props.block.label ?? 'Authorized Signature')
           @input="blockStore.updateBlock(block.id, { signerName: $event.target.value })"
         />
       </template>
-      <template v-else>
-        <span class="sig-label" :style="{ textAlign: block.textAlign ?? 'left' }">{{ label }}</span>
-        <span v-if="block.signerName" class="sig-signer" :style="{ textAlign: block.textAlign ?? 'left', display: 'block', opacity: 0.9 }">{{ block.signerName }}</span>
-      </template>
+        <template v-else>
+          <span class="sig-label" :style="{ textAlign: block.textAlign ?? 'left' }">{{ label }}</span>
+          <template v-if="block.signerName || block.nameBindingKey">
+            <template v-if="block.nameBindingKey">
+              <div class="design-binding-only" :style="{ textAlign: block.textAlign ?? 'left' }">
+                <span style="color: #00b4d8; font-weight: 600;">{{ getPlaceholder(block.nameBindingKey) }}</span>
+                <span style="font-size: 9px; color: #718096; font-style: italic; display: block;">fallback: {{ block.signerName || '(none)' }}</span>
+              </div>
+              <span class="preview-binding-only sig-signer" :style="{ textAlign: block.textAlign ?? 'left', display: 'block', opacity: 0.9 }">
+                {{ getSignatureValue(block.nameBindingKey, block.signerName || '') }}
+              </span>
+            </template>
+            <span v-else class="sig-signer" :style="{ textAlign: block.textAlign ?? 'left', display: 'block', opacity: 0.9 }">{{ block.signerName }}</span>
+          </template>
+        </template>
 
       <!-- Date line -->
       <div v-if="block.showDate !== false" class="date-line" :style="{ textAlign: block.textAlign ?? 'left', marginTop: '4px' }">
@@ -71,7 +99,18 @@ const label = computed(() => props.block.label ?? 'Authorized Signature')
           placeholder="DD/MM/YYYY"
           @input="blockStore.updateBlock(block.id, { dateText: $event.target.value })"
         />
-        <span v-else>{{ block.dateText || '________________________' }}</span>
+        <template v-else>
+          <template v-if="block.dateBindingKey">
+            <div class="design-binding-only" style="display: inline-block;">
+              <span style="color: #00b4d8; font-weight: 600;">{{ getPlaceholder(block.dateBindingKey) }}</span>
+              <span style="font-size: 9px; color: #718096; font-style: italic; display: block;">fallback: {{ block.dateText || '________________________' }}</span>
+            </div>
+            <span class="preview-binding-only">
+              {{ getSignatureValue(block.dateBindingKey, block.dateText || '________________________') }}
+            </span>
+          </template>
+          <span v-else>{{ block.dateText || '________________________' }}</span>
+        </template>
       </div>
     </div>
   </div>

@@ -1,10 +1,12 @@
-<script setup>
+﻿<script setup>
 import { computed } from 'vue'
 import * as icons from '@lucide/vue'
 import { useBlockStore } from '../../stores/blocks.js'
 import { useHistoryStore } from '../../stores/history.js'
 import { getBlockDefaults } from '../../utils/blockDefaults.js'
 import { useCanvasStore } from '../../stores/canvas.js'
+import { useTranslateUi } from '../../utils/translateUi.js'
+const { translateUi } = useTranslateUi()
 
 const props = defineProps({
   blockType: { type: String, required: true },
@@ -50,10 +52,10 @@ function addToCenter() {
     </div>
     <div style="min-width: 0">
       <div style="font-size: 12px; font-weight: 500; color: var(--color-panel-text); line-height: 1.3">
-        {{ meta.name }}
+        {{ translateUi(meta.name) }}
       </div>
       <div style="font-size: 10px; color: var(--color-panel-muted); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">
-        {{ meta.description }}
+        {{ translateUi(meta.description) }}
       </div>
     </div>
   </div>

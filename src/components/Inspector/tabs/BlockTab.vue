@@ -1,8 +1,10 @@
-<script setup>
+﻿<script setup>
 import { computed, ref } from "vue";
 import { useBlockStore } from "../../../stores/blocks.js";
 import { useHistoryStore } from "../../../stores/history.js";
 import { useSettingsStore } from "../../../stores/settings.js";
+import { useTranslateUi } from '../../../utils/translateUi.js'
+const { translateUi } = useTranslateUi();
 import { Upload, Trash2 } from "@lucide/vue";
 
 const props = defineProps({
@@ -589,7 +591,7 @@ function moveField(fromIndex, toIndex) {
     <div class="tab-panel">
         <!-- ─── DIVIDER BLOCK ─── -->
         <div v-if="block.type === 'divider'" class="field-group">
-            <div class="field-label">Divider Settings</div>
+            <div class="field-label">{{ translateUi('Divider Settings') }}</div>
             <div class="field-row">
                 <div>
                     <label
@@ -599,8 +601,7 @@ function moveField(fromIndex, toIndex) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Line Thickness</label
-                    >
+                        >{{ translateUi('Line Thickness') }}</label>
                     <div class="field-unit">
                         <input
                             type="number"
@@ -611,7 +612,7 @@ function moveField(fromIndex, toIndex) {
                             @input="handleInput('lineWidth', $event)"
                             @blur="commitHistory"
                         />
-                        <span class="field-unit-label">px</span>
+                        <span class="field-unit-label">{{ translateUi('px') }}</span>
                     </div>
                 </div>
                 <div>
@@ -622,17 +623,16 @@ function moveField(fromIndex, toIndex) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Line Style</label
-                    >
+                        >{{ translateUi('Line Style') }}</label>
                     <select
                         :value="block.lineStyle ?? 'solid'"
                         class="inp"
                         @change="handleInput('lineStyle', $event, false)"
                         @blur="commitHistory"
                     >
-                        <option value="solid">Solid</option>
-                        <option value="dashed">Dashed</option>
-                        <option value="dotted">Dotted</option>
+                        <option value="solid">{{ translateUi('Solid') }}</option>
+                        <option value="dashed">{{ translateUi('Dashed') }}</option>
+                        <option value="dotted">{{ translateUi('Dotted') }}</option>
                     </select>
                 </div>
             </div>
@@ -644,8 +644,7 @@ function moveField(fromIndex, toIndex) {
                         display: block;
                         margin-bottom: 4px;
                     "
-                    >Line Color</label
-                >
+                    >{{ translateUi('Line Color') }}</label>
                 <div style="display: flex; gap: 8px; align-items: center">
                     <input
                         type="color"
@@ -674,7 +673,7 @@ function moveField(fromIndex, toIndex) {
             v-else-if="block.type === 'image'"
             class="field-group"
         >
-            <div class="field-label">Image Settings</div>
+            <div class="field-label">{{ translateUi('Image Settings') }}</div>
             <div class="field-single" style="margin-bottom: 12px">
                 <label
                     style="
@@ -683,8 +682,7 @@ function moveField(fromIndex, toIndex) {
                         display: block;
                         margin-bottom: 6px;
                     "
-                    >Upload Image</label
-                >
+                    >{{ translateUi('Upload Image') }}</label>
                 <label
                     class="btn btn-panel"
                     style="
@@ -698,7 +696,7 @@ function moveField(fromIndex, toIndex) {
                     "
                 >
                     <Upload :size="16" />
-                    <span>Upload File</span>
+                    <span>{{ translateUi('Upload File') }}</span>
                     <input
                         type="file"
                         accept="image/*"
@@ -716,13 +714,12 @@ function moveField(fromIndex, toIndex) {
                         display: block;
                         margin-bottom: 4px;
                     "
-                    >Image URL (Optional)</label
-                >
+                    >{{ translateUi('Image URL (Optional)') }}</label>
                 <input
                     type="text"
                     :value="block.src ?? ''"
                     class="inp"
-                    placeholder="https://example.com/logo.png"
+                    :placeholder="translateUi('https://example.com/logo.png')"
                     @input="updateProp('src', $event.target.value)"
                     @blur="commitHistory"
                 />
@@ -736,24 +733,23 @@ function moveField(fromIndex, toIndex) {
                         display: block;
                         margin-bottom: 4px;
                     "
-                    >Fit Mode</label
-                >
+                    >{{ translateUi('Fit Mode') }}</label>
                 <select
                     :value="block.fitMode ?? 'contain'"
                     class="inp"
                     @change="handleInput('fitMode', $event, false)"
                     @blur="commitHistory"
                 >
-                    <option value="contain">Contain (Keep Aspect Ratio)</option>
-                    <option value="cover">Cover (Fill Block)</option>
-                    <option value="fill">Stretch (Distort to Fit)</option>
+                    <option value="contain">{{ translateUi('Contain (Keep Aspect Ratio)') }}</option>
+                    <option value="cover">{{ translateUi('Cover (Fill Block)') }}</option>
+                    <option value="fill">{{ translateUi('Stretch (Distort to Fit)') }}</option>
                 </select>
             </div>
         </div>
 
         <!-- ─── SHAPE BLOCK ─── -->
         <div v-else-if="block.type === 'shape'" class="field-group">
-            <div class="field-label">Shape Options</div>
+            <div class="field-label">{{ translateUi('Shape Options') }}</div>
             <div class="field-single">
                 <label
                     style="
@@ -762,16 +758,15 @@ function moveField(fromIndex, toIndex) {
                         display: block;
                         margin-bottom: 4px;
                     "
-                    >Shape Type</label
-                >
+                    >{{ translateUi('Shape Type') }}</label>
                 <select
                     :value="block.shapeType ?? 'rectangle'"
                     class="inp"
                     @change="handleInput('shapeType', $event, false)"
                     @blur="commitHistory"
                 >
-                    <option value="rectangle">Rectangle</option>
-                    <option value="circle">Circle</option>
+                    <option value="rectangle">{{ translateUi('Rectangle') }}</option>
+                    <option value="circle">{{ translateUi('Circle') }}</option>
                 </select>
             </div>
         </div>
@@ -781,7 +776,7 @@ function moveField(fromIndex, toIndex) {
             v-else-if="block.type === 'signature_line'"
             class="field-group"
         >
-            <div class="field-label">Signature Settings</div>
+            <div class="field-label">{{ translateUi('Signature Settings') }}</div>
             <p style="font-size:11px;color:var(--color-panel-muted);margin-bottom:10px">Edit signature line label, signer name, and date directly on the canvas.</p>
 
             <div
@@ -791,7 +786,7 @@ function moveField(fromIndex, toIndex) {
                     justify-content: space-between;
                 "
             >
-                <span>Show Date Placeholder</span>
+                <span>{{ translateUi('Show Date Placeholder') }}</span>
                 <label class="toggle">
                     <input
                         type="checkbox"
@@ -805,18 +800,18 @@ function moveField(fromIndex, toIndex) {
 
         <!-- ─── WATERMARK BLOCK ─── -->
         <div v-else-if="block.type === 'watermark'" class="field-group">
-            <div class="field-label">Watermark Settings</div>
+            <div class="field-label">{{ translateUi('Watermark Settings') }}</div>
             <p style="font-size:11px;color:var(--color-panel-muted);margin:0">Edit watermark text directly on the canvas.</p>
         </div>
 
         <!-- ─── COMPANY INFO ─── -->
         <div v-else-if="block.type === 'company_info'" class="field-group">
-            <div class="field-label">Company Info</div>
+            <div class="field-label">{{ translateUi('Company Info') }}</div>
 
             <p style="font-size:11px;color:var(--color-panel-muted);margin:0 0 10px">Edit company details directly on the canvas.</p>
 
             <!-- Custom Details for Company Info -->
-            <div class="field-label" style="margin-top: 8px">Custom Details</div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Custom Details') }}</div>
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px">
                 <div
                     v-for="(field, index) in block.customFields ?? []"
@@ -845,16 +840,12 @@ function moveField(fromIndex, toIndex) {
                     class="btn btn-ghost"
                     style="width: 100%; font-size: 11px; padding: 5px 0"
                     @click="addCustomField"
-                >
-                    + Add Custom Field
-                </button>
+                >{{ translateUi('+ Add Custom Field') }}</button>
             </div>
 
             <div class="divider" />
 
-            <div class="field-label" style="margin-top: 8px">
-                Show / Hide Fields
-            </div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Show / Hide Fields') }}</div>
             <div style="display: flex; flex-direction: column; gap: 10px">
                 <div
                     v-for="field in [
@@ -885,7 +876,7 @@ function moveField(fromIndex, toIndex) {
 
             <!-- Field Position (Order) -->
             <div class="divider" style="margin-top: 12px" />
-            <div class="field-label" style="margin-top: 8px">Field Position (Order)</div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Field Position (Order)') }}</div>
             <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px">
                 <div
                     v-for="(fld, idx) in companyFieldsSorted"
@@ -907,17 +898,13 @@ function moveField(fromIndex, toIndex) {
                             style="width: 22px; height: 22px; padding: 0"
                             :disabled="idx === 0"
                             @click="moveField(idx, idx - 1)"
-                        >
-                            ▲
-                        </button>
+                        >{{ translateUi('▲') }}</button>
                         <button
                             class="btn btn-ghost btn-icon"
                             style="width: 22px; height: 22px; padding: 0"
                             :disabled="idx === companyFieldsSorted.length - 1"
                             @click="moveField(idx, idx + 1)"
-                        >
-                            ▼
-                        </button>
+                        >{{ translateUi('▼') }}</button>
                     </div>
                 </div>
             </div>
@@ -925,11 +912,11 @@ function moveField(fromIndex, toIndex) {
 
         <!-- ─── CLIENT INFO ─── -->
         <div v-else-if="block.type === 'client_info'" class="field-group">
-            <div class="field-label">Client Info Settings</div>
+            <div class="field-label">{{ translateUi('Client Info Settings') }}</div>
             <p style="font-size:11px;color:var(--color-panel-muted);margin:0 0 10px">Edit client details directly on the canvas.</p>
 
             <!-- Custom Details for Client Info -->
-            <div class="field-label" style="margin-top: 8px">Custom Details</div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Custom Details') }}</div>
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px">
                 <div
                     v-for="(field, index) in block.customFields ?? []"
@@ -958,16 +945,12 @@ function moveField(fromIndex, toIndex) {
                     class="btn btn-ghost"
                     style="width: 100%; font-size: 11px; padding: 5px 0"
                     @click="addCustomField"
-                >
-                    + Add Custom Field
-                </button>
+                >{{ translateUi('+ Add Custom Field') }}</button>
             </div>
 
             <div class="divider" />
 
-            <div class="field-label" style="margin-top: 8px">
-                Show / Hide Fields
-            </div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Show / Hide Fields') }}</div>
             <div style="display: flex; flex-direction: column; gap: 10px">
                 <div
                     v-for="field in [
@@ -1001,7 +984,7 @@ function moveField(fromIndex, toIndex) {
 
             <!-- Field Position (Order) -->
             <div class="divider" style="margin-top: 12px" />
-            <div class="field-label" style="margin-top: 8px">Field Position (Order)</div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Field Position (Order)') }}</div>
             <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px">
                 <div
                     v-for="(fld, idx) in clientFieldsSorted"
@@ -1023,17 +1006,13 @@ function moveField(fromIndex, toIndex) {
                             style="width: 22px; height: 22px; padding: 0"
                             :disabled="idx === 0"
                             @click="moveField(idx, idx - 1)"
-                        >
-                            ▲
-                        </button>
+                        >{{ translateUi('▲') }}</button>
                         <button
                             class="btn btn-ghost btn-icon"
                             style="width: 22px; height: 22px; padding: 0"
                             :disabled="idx === clientFieldsSorted.length - 1"
                             @click="moveField(idx, idx + 1)"
-                        >
-                            ▼
-                        </button>
+                        >{{ translateUi('▼') }}</button>
                     </div>
                 </div>
             </div>
@@ -1041,13 +1020,11 @@ function moveField(fromIndex, toIndex) {
 
         <!-- ─── BANK DETAILS ─── -->
         <div v-else-if="block.type === 'bank_details'" class="field-group">
-            <div class="field-label">Bank Info Settings</div>
+            <div class="field-label">{{ translateUi('Bank Info Settings') }}</div>
             <p style="font-size:11px;color:var(--color-panel-muted);margin-bottom:10px">Edit bank details directly on the canvas.</p>
             <div class="divider" />
 
-            <div class="field-label" style="margin-top: 8px">
-                Show / Hide Fields
-            </div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Show / Hide Fields') }}</div>
             <div style="display: flex; flex-direction: column; gap: 10px">
                 <div
                     v-for="field in ['BankName', 'AccountNo', 'AccountName']"
@@ -1076,7 +1053,7 @@ function moveField(fromIndex, toIndex) {
 
         <!-- ─── HEADER GRID ─── -->
         <div v-else-if="block.type === 'header_grid'" class="field-group">
-            <div class="field-label">Grid Columns</div>
+            <div class="field-label">{{ translateUi('Grid Columns') }}</div>
             <p style="font-size:11px;color:var(--color-panel-muted);margin:0 0 12px">
                 Edit column content directly on the canvas using Fill Mode.
             </p>
@@ -1105,13 +1082,12 @@ function moveField(fromIndex, toIndex) {
                                 display: block;
                                 margin-bottom: 2px;
                             "
-                            >Column Label</label
-                        >
+                            >{{ translateUi('Column Label') }}</label>
                         <input
                             type="text"
                             :value="col.label ?? ''"
                             class="inp"
-                            placeholder="e.g. From"
+                            :placeholder="translateUi('e.g. From')"
                             :disabled="block.locked"
                             @input="updateHeaderColumn(i, 'label', $event.target.value)"
                             @blur="commitHistory"
@@ -1125,13 +1101,12 @@ function moveField(fromIndex, toIndex) {
                                 display: block;
                                 margin-bottom: 2px;
                             "
-                            >Content</label
-                        >
+                            >{{ translateUi('Content') }}</label>
                         <textarea
                             :value="col.content ?? ''"
                             class="inp"
                             style="height: 64px; resize: vertical; font-size: 11px"
-                            placeholder="Type content here..."
+                            :placeholder="translateUi('Type content here...')"
                             :disabled="block.locked"
                             @input="updateHeaderColumn(i, 'content', $event.target.value)"
                             @blur="commitHistory"
@@ -1144,7 +1119,7 @@ function moveField(fromIndex, toIndex) {
         <!-- ─── TOTALS BLOCK ─── -->
 
         <div v-else-if="block.type === 'totals_block'" class="field-group">
-            <div class="field-label">Totals Block Settings</div>
+            <div class="field-label">{{ translateUi('Totals Block Settings') }}</div>
 
             <!-- Select Currency -->
             <div class="field-single" style="margin-bottom: 12px">
@@ -1155,8 +1130,7 @@ function moveField(fromIndex, toIndex) {
                         display: block;
                         margin-bottom: 4px;
                     "
-                    >Currency</label
-                >
+                    >{{ translateUi('Currency') }}</label>
                 <select
                     :value="block.currency ?? settingsStore.currency"
                     class="inp"
@@ -1223,8 +1197,7 @@ function moveField(fromIndex, toIndex) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Tax Rate</label
-                    >
+                        >{{ translateUi('Tax Rate') }}</label>
                     <div class="field-unit">
                         <input
                             type="number"
@@ -1235,7 +1208,7 @@ function moveField(fromIndex, toIndex) {
                             @input="handleInput('taxRate', $event)"
                             @blur="commitHistory"
                         />
-                        <span class="field-unit-label">%</span>
+                        <span class="field-unit-label">{{ translateUi('%') }}</span>
                     </div>
                 </div>
                 <div>
@@ -1246,16 +1219,15 @@ function moveField(fromIndex, toIndex) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Discount Type</label
-                    >
+                        >{{ translateUi('Discount Type') }}</label>
                     <select
                         :value="block.discountType ?? 'fixed'"
                         class="inp"
                         @change="handleInput('discountType', $event, false)"
                         @blur="commitHistory"
                     >
-                        <option value="fixed">Fixed Amount</option>
-                        <option value="percent">Percentage</option>
+                        <option value="fixed">{{ translateUi('Fixed Amount') }}</option>
+                        <option value="percent">{{ translateUi('Percentage') }}</option>
                     </select>
                 </div>
             </div>
@@ -1268,8 +1240,7 @@ function moveField(fromIndex, toIndex) {
                         display: block;
                         margin-bottom: 2px;
                     "
-                    >Discount Value</label
-                >
+                    >{{ translateUi('Discount Value') }}</label>
                 <div class="field-unit">
                     <input
                         type="number"
@@ -1290,7 +1261,7 @@ function moveField(fromIndex, toIndex) {
 
         <!-- ─── ITEM TABLE BLOCK ─── -->
         <div v-else-if="block.type === 'item_table'" class="field-group">
-            <div class="field-label">Table Settings</div>
+            <div class="field-label">{{ translateUi('Table Settings') }}</div>
 
             <div class="field-row">
                 <div>
@@ -1301,8 +1272,7 @@ function moveField(fromIndex, toIndex) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Empty Rows</label
-                    >
+                        >{{ translateUi('Empty Rows') }}</label>
                     <input
                         type="number"
                         :value="block.emptyRows ?? 3"
@@ -1321,8 +1291,7 @@ function moveField(fromIndex, toIndex) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Body Font Size</label
-                    >
+                        >{{ translateUi('Body Font Size') }}</label>
                     <div class="field-unit">
                         <input
                             type="number"
@@ -1333,7 +1302,7 @@ function moveField(fromIndex, toIndex) {
                             @input="handleInput('bodyFontSize', $event)"
                             @blur="commitHistory"
                         />
-                        <span class="field-unit-label">px</span>
+                        <span class="field-unit-label">{{ translateUi('px') }}</span>
                     </div>
                 </div>
             </div>
@@ -1354,7 +1323,7 @@ function moveField(fromIndex, toIndex) {
                         justify-content: space-between;
                     "
                 >
-                    <span>Show Header Row</span>
+                    <span>{{ translateUi('Show Header Row') }}</span>
                     <label class="toggle">
                         <input
                             type="checkbox"
@@ -1371,7 +1340,7 @@ function moveField(fromIndex, toIndex) {
                         justify-content: space-between;
                     "
                 >
-                    <span>Show Row Numbers</span>
+                    <span>{{ translateUi('Show Row Numbers') }}</span>
                     <label class="toggle">
                         <input
                             type="checkbox"
@@ -1388,7 +1357,7 @@ function moveField(fromIndex, toIndex) {
                         justify-content: space-between;
                     "
                 >
-                    <span>Show Table Borders</span>
+                    <span>{{ translateUi('Show Table Borders') }}</span>
                     <label class="toggle">
                         <input
                             type="checkbox"
@@ -1402,7 +1371,7 @@ function moveField(fromIndex, toIndex) {
 
             <!-- Headers design -->
             <div class="divider" />
-            <div class="field-label" style="margin-top: 8px">Header Styles</div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Header Styles') }}</div>
             <div class="field-row">
                 <div>
                     <label
@@ -1412,8 +1381,7 @@ function moveField(fromIndex, toIndex) {
                             display: block;
                             margin-bottom: 4px;
                         "
-                        >Header Bg</label
-                    >
+                        >{{ translateUi('Header Bg') }}</label>
                     <div style="display: flex; gap: 6px; align-items: center">
                         <input
                             type="color"
@@ -1443,8 +1411,7 @@ function moveField(fromIndex, toIndex) {
                             display: block;
                             margin-bottom: 4px;
                         "
-                        >Header Color</label
-                    >
+                        >{{ translateUi('Header Color') }}</label>
                     <div style="display: flex; gap: 6px; align-items: center">
                         <input
                             type="color"
@@ -1513,16 +1480,13 @@ function moveField(fromIndex, toIndex) {
                             display: block;
                             margin-bottom: 4px;
                         "
-                        >Header Font</label
-                    >
+                        >{{ translateUi('Header Font') }}</label>
                     <select
                         :value="block.headerFontFamily ?? 'inherit'"
                         class="inp"
                         @change="updateProp('headerFontFamily', $event.target.value); commitHistory();"
                     >
-                        <option value="inherit">
-                            Use Global Font
-                        </option>
+                        <option value="inherit">{{ translateUi('Use Global Font') }}</option>
                         <option
                             v-for="font in settingsStore.fonts"
                             :key="font.value"
@@ -1540,8 +1504,7 @@ function moveField(fromIndex, toIndex) {
                             display: block;
                             margin-bottom: 4px;
                         "
-                        >Header Size</label
-                    >
+                        >{{ translateUi('Header Size') }}</label>
                     <div class="field-unit">
                         <input
                             type="number"
@@ -1552,16 +1515,14 @@ function moveField(fromIndex, toIndex) {
                             @input="handleInput('headerFontSize', $event)"
                             @blur="commitHistory"
                         />
-                        <span class="field-unit-label">px</span>
+                        <span class="field-unit-label">{{ translateUi('px') }}</span>
                     </div>
                 </div>
             </div>
 
             <!-- Column Configurator -->
             <div class="divider" />
-            <div class="field-label" style="margin-top: 8px">
-                Columns Visibility & Width
-            </div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Columns Visibility & Width') }}</div>
             <div style="display: flex; flex-direction: column; gap: 8px">
                 <div
                     v-for="(col, index) in block.columns"
@@ -1591,7 +1552,7 @@ function moveField(fromIndex, toIndex) {
                             :value="col.label"
                             class="inp"
                             style="padding: 2px 4px; font-size: 11px; flex: 1"
-                            placeholder="Label"
+                            :placeholder="translateUi('Label')"
                             @input="updateColumnProp(index, 'label', $event.target.value)"
                         />
 
@@ -1604,7 +1565,7 @@ function moveField(fromIndex, toIndex) {
                                 style="padding: 2px 4px; font-size: 11px; text-align: center;"
                                 @input="updateColumnProp(index, 'width', parseFloat($event.target.value))"
                             />
-                            <span class="field-unit-label" style="padding: 0 4px; font-size: 9px">%</span>
+                            <span class="field-unit-label" style="padding: 0 4px; font-size: 9px">{{ translateUi('%') }}</span>
                         </div>
 
                         <!-- Delete button -->
@@ -1621,7 +1582,7 @@ function moveField(fromIndex, toIndex) {
                     <!-- Bottom row: H-align and V-align toggles -->
                     <div style="display: flex; align-items: center; gap: 12px; padding-left: 2px;">
                         <div style="display: flex; align-items: center; gap: 4px;">
-                            <span style="font-size: 9px; color: var(--color-panel-muted); white-space: nowrap;">H:</span>
+                            <span style="font-size: 9px; color: var(--color-panel-muted); white-space: nowrap;">{{ translateUi('H:') }}</span>
                             <div class="align-btn-group">
                                 <button
                                     v-for="opt in [{v:'left',label:'←'},{v:'center',label:'↔'},{v:'right',label:'→'}]"
@@ -1634,7 +1595,7 @@ function moveField(fromIndex, toIndex) {
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 4px;">
-                            <span style="font-size: 9px; color: var(--color-panel-muted); white-space: nowrap;">V:</span>
+                            <span style="font-size: 9px; color: var(--color-panel-muted); white-space: nowrap;">{{ translateUi('V:') }}</span>
                             <div class="align-btn-group">
                                 <button
                                     v-for="opt in [{v:'top',label:'↑'},{v:'middle',label:'↕'},{v:'bottom',label:'↓'}]"
@@ -1653,14 +1614,12 @@ function moveField(fromIndex, toIndex) {
                     class="btn btn-ghost"
                     style="width: 100%; font-size: 11px; padding: 5px 0; margin-top: 4px"
                     @click="addColumn"
-                >
-                    + Add Column
-                </button>
+                >{{ translateUi('+ Add Column') }}</button>
             </div>
 
             <!-- ROW TYPES SECTION -->
             <div class="divider" />
-            <div class="field-label" style="margin-top: 8px">Row Types</div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Row Types') }}</div>
             <div style="margin-bottom: 10px;">
                 <select
                     class="inp"
@@ -1668,10 +1627,10 @@ function moveField(fromIndex, toIndex) {
                     @change="if ($event.target.value) { addSpecialRow($event.target.value); $event.target.value = ''; }"
                 >
                     <option value="">+ Add Row Type...</option>
-                    <option value="summary">Summary Row (bold text, custom bg)</option>
-                    <option value="section_header">Section Header Row (full width label)</option>
-                    <option value="split">Split Row (left details + right totals)</option>
-                    <option value="divider">Divider Row (thin horizontal line)</option>
+                    <option value="summary">{{ translateUi('Summary Row (bold text, custom bg)') }}</option>
+                    <option value="section_header">{{ translateUi('Section Header Row (full width label)') }}</option>
+                    <option value="split">{{ translateUi('Split Row (left details + right totals)') }}</option>
+                    <option value="divider">{{ translateUi('Divider Row (thin horizontal line)') }}</option>
                 </select>
             </div>
 
@@ -1698,9 +1657,7 @@ function moveField(fromIndex, toIndex) {
                                 class="btn btn-ghost text-danger"
                                 style="font-size: 10px; padding: 2px 6px;"
                                 @click="deleteSpecialRow(rIdx)"
-                            >
-                                🗑 Delete
-                            </button>
+                            >{{ translateUi('🗑 Delete') }}</button>
                         </div>
                     </div>
                     
@@ -1712,7 +1669,7 @@ function moveField(fromIndex, toIndex) {
                         <!-- Summary Row fields -->
                         <template v-if="row.type === 'summary'">
                             <div>
-                                <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Text</label>
+                                <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Text') }}</label>
                                 <input
                                     type="text"
                                     :value="row.text"
@@ -1722,7 +1679,7 @@ function moveField(fromIndex, toIndex) {
                             </div>
                             <div class="field-row">
                                 <div>
-                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Bg Color</label>
+                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Bg Color') }}</label>
                                     <div style="display: flex; gap: 4px; align-items: center;">
                                         <input
                                             type="color"
@@ -1734,13 +1691,13 @@ function moveField(fromIndex, toIndex) {
                                             type="text"
                                             :value="row.bgColor"
                                             class="inp"
-                                            placeholder="Default"
+                                            :placeholder="translateUi('Default')"
                                             @input="updateSpecialRowProp(row.id, 'bgColor', $event.target.value)"
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Text Color</label>
+                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Text Color') }}</label>
                                     <div style="display: flex; gap: 4px; align-items: center;">
                                         <input
                                             type="color"
@@ -1752,33 +1709,33 @@ function moveField(fromIndex, toIndex) {
                                             type="text"
                                             :value="row.textColor"
                                             class="inp"
-                                            placeholder="Default"
+                                            :placeholder="translateUi('Default')"
                                             @input="updateSpecialRowProp(row.id, 'textColor', $event.target.value)"
                                         />
                                     </div>
                                 </div>
                             </div>
                             <div>
-                                <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Font Weight</label>
+                                <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Font Weight') }}</label>
                                 <select
                                     :value="row.fontWeight || 'bold'"
                                     class="inp"
                                     @change="updateSpecialRowProp(row.id, 'fontWeight', $event.target.value)"
                                 >
-                                    <option value="normal">Normal</option>
-                                    <option value="bold">Bold</option>
+                                    <option value="normal">{{ translateUi('Normal') }}</option>
+                                    <option value="bold">{{ translateUi('Bold') }}</option>
                                 </select>
                             </div>
                             <!-- Alignment -->
                             <div style="display: flex; gap: 12px; align-items: center;">
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <span style="font-size: 9px; color: var(--color-panel-muted);">H:</span>
+                                    <span style="font-size: 9px; color: var(--color-panel-muted);">{{ translateUi('H:') }}</span>
                                     <div class="align-btn-group">
                                         <button v-for="opt in [{v:'left',label:'←'},{v:'center',label:'↔'},{v:'right',label:'→'}]" :key="opt.v" class="align-btn" :class="{ active: (row.hAlign ?? 'left') === opt.v }" @click="updateSpecialRowProp(row.id, 'hAlign', opt.v)">{{ opt.label }}</button>
                                     </div>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <span style="font-size: 9px; color: var(--color-panel-muted);">V:</span>
+                                    <span style="font-size: 9px; color: var(--color-panel-muted);">{{ translateUi('V:') }}</span>
                                     <div class="align-btn-group">
                                         <button v-for="opt in [{v:'top',label:'↑'},{v:'middle',label:'↕'},{v:'bottom',label:'↓'}]" :key="opt.v" class="align-btn" :class="{ active: (row.vAlign ?? 'middle') === opt.v }" @click="updateSpecialRowProp(row.id, 'vAlign', opt.v)">{{ opt.label }}</button>
                                     </div>
@@ -1789,7 +1746,7 @@ function moveField(fromIndex, toIndex) {
                         <!-- Section Header fields -->
                         <template v-if="row.type === 'section_header'">
                             <div>
-                                <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Label Text</label>
+                                <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Label Text') }}</label>
                                 <input
                                     type="text"
                                     :value="row.text"
@@ -1799,7 +1756,7 @@ function moveField(fromIndex, toIndex) {
                             </div>
                             <div class="field-row">
                                 <div>
-                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Bg Color</label>
+                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Bg Color') }}</label>
                                     <div style="display: flex; gap: 4px; align-items: center;">
                                         <input
                                             type="color"
@@ -1811,13 +1768,13 @@ function moveField(fromIndex, toIndex) {
                                             type="text"
                                             :value="row.bgColor"
                                             class="inp"
-                                            placeholder="Default"
+                                            :placeholder="translateUi('Default')"
                                             @input="updateSpecialRowProp(row.id, 'bgColor', $event.target.value)"
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Text Color</label>
+                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Text Color') }}</label>
                                     <div style="display: flex; gap: 4px; align-items: center;">
                                         <input
                                             type="color"
@@ -1829,7 +1786,7 @@ function moveField(fromIndex, toIndex) {
                                             type="text"
                                             :value="row.textColor"
                                             class="inp"
-                                            placeholder="Default"
+                                            :placeholder="translateUi('Default')"
                                             @input="updateSpecialRowProp(row.id, 'textColor', $event.target.value)"
                                         />
                                     </div>
@@ -1838,13 +1795,13 @@ function moveField(fromIndex, toIndex) {
                             <!-- Alignment -->
                             <div style="display: flex; gap: 12px; align-items: center;">
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <span style="font-size: 9px; color: var(--color-panel-muted);">H:</span>
+                                    <span style="font-size: 9px; color: var(--color-panel-muted);">{{ translateUi('H:') }}</span>
                                     <div class="align-btn-group">
                                         <button v-for="opt in [{v:'left',label:'←'},{v:'center',label:'↔'},{v:'right',label:'→'}]" :key="opt.v" class="align-btn" :class="{ active: (row.hAlign ?? 'left') === opt.v }" @click="updateSpecialRowProp(row.id, 'hAlign', opt.v)">{{ opt.label }}</button>
                                     </div>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <span style="font-size: 9px; color: var(--color-panel-muted);">V:</span>
+                                    <span style="font-size: 9px; color: var(--color-panel-muted);">{{ translateUi('V:') }}</span>
                                     <div class="align-btn-group">
                                         <button v-for="opt in [{v:'top',label:'↑'},{v:'middle',label:'↕'},{v:'bottom',label:'↓'}]" :key="opt.v" class="align-btn" :class="{ active: (row.vAlign ?? 'middle') === opt.v }" @click="updateSpecialRowProp(row.id, 'vAlign', opt.v)">{{ opt.label }}</button>
                                     </div>
@@ -1855,7 +1812,7 @@ function moveField(fromIndex, toIndex) {
                         <!-- Split Row fields -->
                         <template v-if="row.type === 'split'">
                             <div>
-                                <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Left Cell (Bank Details, Notes)</label>
+                                <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Left Cell (Bank Details, Notes)') }}</label>
                                 <textarea
                                     :value="row.leftText"
                                     class="inp"
@@ -1865,22 +1822,22 @@ function moveField(fromIndex, toIndex) {
                             </div>
                             <!-- Left cell alignment -->
                             <div style="display: flex; gap: 12px; align-items: center; padding-left: 2px;">
-                                <span style="font-size: 9px; color: var(--color-panel-muted); white-space: nowrap;">Left:</span>
+                                <span style="font-size: 9px; color: var(--color-panel-muted); white-space: nowrap;">{{ translateUi('Left:') }}</span>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <span style="font-size: 9px; color: var(--color-panel-muted);">H:</span>
+                                    <span style="font-size: 9px; color: var(--color-panel-muted);">{{ translateUi('H:') }}</span>
                                     <div class="align-btn-group">
                                         <button v-for="opt in [{v:'left',label:'←'},{v:'center',label:'↔'},{v:'right',label:'→'}]" :key="opt.v" class="align-btn" :class="{ active: (row.leftHAlign ?? 'left') === opt.v }" @click="updateSpecialRowProp(row.id, 'leftHAlign', opt.v)">{{ opt.label }}</button>
                                     </div>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <span style="font-size: 9px; color: var(--color-panel-muted);">V:</span>
+                                    <span style="font-size: 9px; color: var(--color-panel-muted);">{{ translateUi('V:') }}</span>
                                     <div class="align-btn-group">
                                         <button v-for="opt in [{v:'top',label:'↑'},{v:'middle',label:'↕'},{v:'bottom',label:'↓'}]" :key="opt.v" class="align-btn" :class="{ active: (row.leftVAlign ?? 'top') === opt.v }" @click="updateSpecialRowProp(row.id, 'leftVAlign', opt.v)">{{ opt.label }}</button>
                                     </div>
                                 </div>
                             </div>
                             <div>
-                                <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Right Cell (Totals Summary)</label>
+                                <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Right Cell (Totals Summary)') }}</label>
                                 <textarea
                                     :value="row.rightText"
                                     class="inp"
@@ -1890,15 +1847,15 @@ function moveField(fromIndex, toIndex) {
                             </div>
                             <!-- Right cell alignment -->
                             <div style="display: flex; gap: 12px; align-items: center; padding-left: 2px;">
-                                <span style="font-size: 9px; color: var(--color-panel-muted); white-space: nowrap;">Right:</span>
+                                <span style="font-size: 9px; color: var(--color-panel-muted); white-space: nowrap;">{{ translateUi('Right:') }}</span>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <span style="font-size: 9px; color: var(--color-panel-muted);">H:</span>
+                                    <span style="font-size: 9px; color: var(--color-panel-muted);">{{ translateUi('H:') }}</span>
                                     <div class="align-btn-group">
                                         <button v-for="opt in [{v:'left',label:'←'},{v:'center',label:'↔'},{v:'right',label:'→'}]" :key="opt.v" class="align-btn" :class="{ active: (row.rightHAlign ?? 'right') === opt.v }" @click="updateSpecialRowProp(row.id, 'rightHAlign', opt.v)">{{ opt.label }}</button>
                                     </div>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 4px;">
-                                    <span style="font-size: 9px; color: var(--color-panel-muted);">V:</span>
+                                    <span style="font-size: 9px; color: var(--color-panel-muted);">{{ translateUi('V:') }}</span>
                                     <div class="align-btn-group">
                                         <button v-for="opt in [{v:'top',label:'↑'},{v:'middle',label:'↕'},{v:'bottom',label:'↓'}]" :key="opt.v" class="align-btn" :class="{ active: (row.rightVAlign ?? 'top') === opt.v }" @click="updateSpecialRowProp(row.id, 'rightVAlign', opt.v)">{{ opt.label }}</button>
                                     </div>
@@ -1906,7 +1863,7 @@ function moveField(fromIndex, toIndex) {
                             </div>
                             <div class="field-row">
                                 <div>
-                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Left Width %</label>
+                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Left Width %') }}</label>
                                     <input
                                         type="number"
                                         :value="row.leftWidth ?? 60"
@@ -1917,7 +1874,7 @@ function moveField(fromIndex, toIndex) {
                                     />
                                 </div>
                                 <div>
-                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Right Width %</label>
+                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Right Width %') }}</label>
                                     <input
                                         type="text"
                                         :value="100 - (row.leftWidth ?? 60) + '% (Auto)'"
@@ -1932,7 +1889,7 @@ function moveField(fromIndex, toIndex) {
                         <template v-if="row.type === 'divider'">
                             <div class="field-row">
                                 <div>
-                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Line Color</label>
+                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Line Color') }}</label>
                                     <div style="display: flex; gap: 4px; align-items: center;">
                                         <input
                                             type="color"
@@ -1944,13 +1901,13 @@ function moveField(fromIndex, toIndex) {
                                             type="text"
                                             :value="row.color"
                                             class="inp"
-                                            placeholder="Default"
+                                            :placeholder="translateUi('Default')"
                                             @input="updateSpecialRowProp(row.id, 'color', $event.target.value)"
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Thickness (px)</label>
+                                    <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Thickness (px)') }}</label>
                                     <input
                                         type="number"
                                         :value="row.thickness ?? 1"
@@ -1968,7 +1925,7 @@ function moveField(fromIndex, toIndex) {
 
             <!-- CELL MERGE SECTION -->
             <div class="divider" />
-            <div class="field-label" style="margin-top: 8px">Cell Merge</div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Cell Merge') }}</div>
             <div style="margin-bottom: 10px;">
                 <select
                     class="inp"
@@ -1977,18 +1934,10 @@ function moveField(fromIndex, toIndex) {
                     @change="handleMergeSelect($event.target.value); $event.target.value = '';"
                 >
                     <option value="">Merge Options...</option>
-                    <option value="merge_center" :disabled="selectedCellsCount < 2">
-                        ↔ Merge & Center
-                    </option>
-                    <option value="merge_across" :disabled="selectedCellsCount < 2">
-                        ➔ Merge Across
-                    </option>
-                    <option value="merge_cells" :disabled="selectedCellsCount < 2">
-                        田 Merge Cells
-                    </option>
-                    <option value="unmerge" :disabled="!hasSelectedMerge">
-                        ⚏ Unmerge Cells
-                    </option>
+                    <option value="merge_center" :disabled="selectedCellsCount < 2">{{ translateUi('↔ Merge & Center') }}</option>
+                    <option value="merge_across" :disabled="selectedCellsCount < 2">{{ translateUi('➔ Merge Across') }}</option>
+                    <option value="merge_cells" :disabled="selectedCellsCount < 2">{{ translateUi('田 Merge Cells') }}</option>
+                    <option value="unmerge" :disabled="!hasSelectedMerge">{{ translateUi('⚏ Unmerge Cells') }}</option>
                 </select>
             </div>
             
@@ -2010,15 +1959,13 @@ function moveField(fromIndex, toIndex) {
                         class="btn btn-ghost text-danger"
                         style="font-size: 9px; padding: 1px 4px; height: auto;"
                         @click="unmergeCell(m.id)"
-                    >
-                        Unmerge
-                    </button>
+                    >{{ translateUi('Unmerge') }}</button>
                 </div>
             </div>
 
             <!-- CELL BORDERS SECTION -->
             <div class="divider" />
-            <div class="field-label" style="margin-top: 8px">Cell Borders</div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Cell Borders') }}</div>
             <div style="margin-bottom: 10px;">
                 <select
                     class="inp"
@@ -2027,20 +1974,20 @@ function moveField(fromIndex, toIndex) {
                     @change="applyCellBorder($event.target.value); $event.target.value = '';"
                 >
                     <option value="">Borders Options...</option>
-                    <option value="bottom">➖ Bottom Border</option>
-                    <option value="top">▔ Top Border</option>
-                    <option value="left">▏ Left Border</option>
-                    <option value="right">▕ Right Border</option>
-                    <option value="no_border">❌ No Border (Borderless)</option>
-                    <option value="all_borders">田 All Borders</option>
-                    <option value="outside">⬜ Outside Borders</option>
-                    <option value="thick_outside">⬛ Thick Outside Borders</option>
-                    <option value="bottom_double">‗ Bottom Double Border</option>
-                    <option value="thick_bottom">▰ Thick Bottom Border</option>
-                    <option value="top_bottom">＝ Top and Bottom Border</option>
-                    <option value="top_thick_bottom">⎧ Top and Thick Bottom Border</option>
-                    <option value="top_double_bottom">⎨ Top and Double Bottom Border</option>
-                    <option value="clear_custom">🔄 Reset to Table Default</option>
+                    <option value="bottom">{{ translateUi('➖ Bottom Border') }}</option>
+                    <option value="top">{{ translateUi('▔ Top Border') }}</option>
+                    <option value="left">{{ translateUi('▏ Left Border') }}</option>
+                    <option value="right">{{ translateUi('▕ Right Border') }}</option>
+                    <option value="no_border">{{ translateUi('❌ No Border (Borderless)') }}</option>
+                    <option value="all_borders">{{ translateUi('田 All Borders') }}</option>
+                    <option value="outside">{{ translateUi('⬜ Outside Borders') }}</option>
+                    <option value="thick_outside">{{ translateUi('⬛ Thick Outside Borders') }}</option>
+                    <option value="bottom_double">{{ translateUi('‗ Bottom Double Border') }}</option>
+                    <option value="thick_bottom">{{ translateUi('▰ Thick Bottom Border') }}</option>
+                    <option value="top_bottom">{{ translateUi('＝ Top and Bottom Border') }}</option>
+                    <option value="top_thick_bottom">{{ translateUi('⎧ Top and Thick Bottom Border') }}</option>
+                    <option value="top_double_bottom">{{ translateUi('⎨ Top and Double Bottom Border') }}</option>
+                    <option value="clear_custom">{{ translateUi('🔄 Reset to Table Default') }}</option>
                 </select>
                 <div v-if="selectedCellsCount === 0" style="font-size: 9px; color: var(--color-panel-muted); margin-top: 4px; font-style: italic;">
                     Select table cells to enable custom borders.
@@ -2049,12 +1996,12 @@ function moveField(fromIndex, toIndex) {
 
             <!-- ROW STYLING SECTION -->
             <div class="divider" />
-            <div class="field-label" style="margin-top: 8px">Row Styling</div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Row Styling') }}</div>
 
             <!-- Alternating row colors -->
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span>Alternating Colors</span>
+                    <span>{{ translateUi('Alternating Colors') }}</span>
                     <label class="toggle">
                         <input
                             type="checkbox"
@@ -2067,7 +2014,7 @@ function moveField(fromIndex, toIndex) {
                 
                 <div v-if="block.alternatingRows" class="field-row">
                     <div>
-                        <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Row 1 Color</label>
+                        <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Row 1 Color') }}</label>
                         <div style="display: flex; gap: 4px; align-items: center;">
                             <input
                                 type="color"
@@ -2086,7 +2033,7 @@ function moveField(fromIndex, toIndex) {
                         </div>
                     </div>
                     <div>
-                        <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Row 2 Color</label>
+                        <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Row 2 Color') }}</label>
                         <div style="display: flex; gap: 4px; align-items: center;">
                             <input
                                 type="color"
@@ -2111,7 +2058,7 @@ function moveField(fromIndex, toIndex) {
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
                 <div style="font-size: 10px; font-weight: bold; color: var(--color-panel-primary); margin-top: 4px;">Summary/Total Rows Default</div>
                 <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <span>Font Weight Bold</span>
+                    <span>{{ translateUi('Font Weight Bold') }}</span>
                     <label class="toggle">
                         <input
                             type="checkbox"
@@ -2123,7 +2070,7 @@ function moveField(fromIndex, toIndex) {
                 </div>
                 <div class="field-row">
                     <div>
-                        <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Bg Color</label>
+                        <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Bg Color') }}</label>
                         <div style="display: flex; gap: 4px; align-items: center;">
                             <input
                                 type="color"
@@ -2142,7 +2089,7 @@ function moveField(fromIndex, toIndex) {
                         </div>
                     </div>
                     <div>
-                        <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Text Color</label>
+                        <label style="font-size: 9px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Text Color') }}</label>
                         <div style="display: flex; gap: 4px; align-items: center;">
                             <input
                                 type="color"
@@ -2166,19 +2113,19 @@ function moveField(fromIndex, toIndex) {
             <!-- Borders & Padding -->
             <div class="field-row" style="margin-bottom: 10px;">
                 <div>
-                    <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Border Style</label>
+                    <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Border Style') }}</label>
                     <select
                         :value="block.borderStyle || 'solid'"
                         class="inp"
                         @change="updateProp('borderStyle', $event.target.value); commitHistory();"
                     >
-                        <option value="solid">Solid</option>
-                        <option value="dashed">Dashed</option>
-                        <option value="dotted">Dotted</option>
+                        <option value="solid">{{ translateUi('Solid') }}</option>
+                        <option value="dashed">{{ translateUi('Dashed') }}</option>
+                        <option value="dotted">{{ translateUi('Dotted') }}</option>
                     </select>
                 </div>
                 <div>
-                    <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">Cell Padding</label>
+                    <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px;">{{ translateUi('Cell Padding') }}</label>
                     <div class="field-unit">
                         <input
                             type="number"
@@ -2186,16 +2133,16 @@ function moveField(fromIndex, toIndex) {
                             class="inp"
                             min="0"
                             max="30"
-                            placeholder="Auto"
+                            :placeholder="translateUi('Auto')"
                             @input="handleInput('cellPadding', $event)"
                             @blur="commitHistory"
                         />
-                        <span class="field-unit-label">px</span>
+                        <span class="field-unit-label">{{ translateUi('px') }}</span>
                     </div>
                 </div>
             </div>
             <div style="margin-bottom: 10px;">
-                <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 4px;">Border Color</label>
+                <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 4px;">{{ translateUi('Border Color') }}</label>
                 <div style="display: flex; gap: 6px; align-items: center;">
                     <input
                         type="color"
@@ -2217,10 +2164,10 @@ function moveField(fromIndex, toIndex) {
 
         <!-- ─── DOCUMENT HEADER BLOCK ─── -->
         <div v-else-if="block.type === 'document_header'" class="field-group">
-            <div class="field-label">Document Header</div>
+            <div class="field-label">{{ translateUi('Document Header') }}</div>
             <p style="font-size:11px;color:var(--color-panel-muted);margin-bottom:10px">Edit document title, number, dates, and reference directly on the canvas.</p>
             <div class="divider" />
-            <div class="field-label" style="margin-top: 8px">Show / Hide Fields</div>
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Show / Hide Fields') }}</div>
             <div style="display: flex; flex-direction: column; gap: 10px">
                 <div
                     v-for="row in [
@@ -2247,19 +2194,19 @@ function moveField(fromIndex, toIndex) {
 
         <!-- ─── RECEIPT HEADER ─── -->
         <div v-else-if="block.type === 'receipt_header'" class="field-group">
-            <div class="field-label">Receipt Header</div>
+            <div class="field-label">{{ translateUi('Receipt Header') }}</div>
             <p style="font-size:11px;color:var(--color-panel-muted);margin:0">Edit store name, address, and phone directly on the canvas.</p>
         </div>
 
         <!-- ─── RECEIPT FOOTER ─── -->
         <div v-else-if="block.type === 'receipt_footer'" class="field-group">
-            <div class="field-label">Receipt Footer</div>
+            <div class="field-label">{{ translateUi('Receipt Footer') }}</div>
             <p style="font-size:11px;color:var(--color-panel-muted);margin:0">Edit thank you message and policy note directly on the canvas.</p>
         </div>
 
         <!-- ─── CHECKBOXES ROW ─── -->
         <div v-else-if="block.type === 'checkboxes_row'" class="field-group">
-            <div class="field-label">Checkbox Options</div>
+            <div class="field-label">{{ translateUi('Checkbox Options') }}</div>
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px">
                 <div
                     v-for="(opt, index) in block.options ?? []"
@@ -2300,31 +2247,29 @@ function moveField(fromIndex, toIndex) {
                     class="btn btn-ghost"
                     style="width:100%;font-size:11px;padding:5px 0"
                     @click="addCheckboxOption"
-                >
-                    + Add Option
-                </button>
+                >{{ translateUi('+ Add Option') }}</button>
             </div>
         </div>
 
         <!-- ─── STAMP BOX ─── -->
         <div v-else-if="block.type === 'stamp_box'" class="field-group">
-            <div class="field-label">Stamp Box</div>
+            <div class="field-label">{{ translateUi('Stamp Box') }}</div>
             <p style="font-size:11px;color:var(--color-panel-muted);margin:0">Edit stamp box label directly on the canvas.</p>
         </div>
 
         <!-- ─── CARBON COPY LABEL ─── -->
         <div v-else-if="block.type === 'carbon_copy_label'" class="field-group">
-            <div class="field-label">Copy Label</div>
+            <div class="field-label">{{ translateUi('Copy Label') }}</div>
             <p style="font-size:11px;color:var(--color-panel-muted);margin:0">Edit copy label text directly on the canvas.</p>
         </div>
 
         <!-- ─── CONTAINER BLOCK ─── -->
         <div v-else-if="block.type === 'container'" class="field-group">
-            <div class="field-label">Container Settings</div>
+            <div class="field-label">{{ translateUi('Container Settings') }}</div>
             <div
                 style="display:flex;align-items:center;justify-content:space-between"
             >
-                <span>Lock Children</span>
+                <span>{{ translateUi('Lock Children') }}</span>
                 <label class="toggle">
                     <input
                         type="checkbox"
@@ -2338,7 +2283,7 @@ function moveField(fromIndex, toIndex) {
 
         <!-- ─── SPACER ─── -->
         <div v-else-if="block.type === 'spacer'" class="field-group">
-            <div class="field-label">Spacer</div>
+            <div class="field-label">{{ translateUi('Spacer') }}</div>
             <p style="font-size:11px;color:var(--color-panel-muted);margin:0">
                 Resize the spacer block by dragging its handles on the canvas.
                 Use the Layout tab to set exact height.

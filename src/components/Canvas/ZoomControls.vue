@@ -1,10 +1,11 @@
 <script setup>
+import { computed } from 'vue'
 import { useCanvasStore } from '../../stores/canvas.js'
 import { ZoomIn, ZoomOut, Maximize2 } from '@lucide/vue'
 
 const canvasStore = useCanvasStore()
 
-const zoomPercent = () => Math.round(canvasStore.zoom * 100)
+const zoomPercent = computed(() => Math.round(canvasStore.zoom * 100))
 </script>
 
 <template>
@@ -12,7 +13,7 @@ const zoomPercent = () => Math.round(canvasStore.zoom * 100)
     <button class="btn btn-ghost btn-icon" data-tooltip="Zoom Out" @click="canvasStore.zoomOut()">
       <ZoomOut :size="13" />
     </button>
-    <span class="zoom-value">{{ Math.round(canvasStore.zoom * 100) }}%</span>
+    <span class="zoom-value">{{ zoomPercent }}%</span>
     <button class="btn btn-ghost btn-icon" data-tooltip="Zoom In" @click="canvasStore.zoomIn()">
       <ZoomIn :size="13" />
     </button>

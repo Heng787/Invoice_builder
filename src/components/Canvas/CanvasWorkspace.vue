@@ -1,5 +1,17 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+// Tiny debounce helper (replaces lodash-es to avoid the extra dependency)
+function debounce(fn, wait, { leading = false, trailing = true } = {}) {
+  let timer = null
+  function debounced(...args) {
+    const callNow = leading && !timer
+    clearTimeout(timer)
+    timer = setTimeout(() => { timer = null; if (trailing && !callNow) fn.apply(this, args) }, wait)
+    if (callNow) fn.apply(this, args)
+  }
+  debounced.cancel = () => clearTimeout(timer)
+  return debounced
+}
 import { useCanvasStore } from '../../stores/canvas.js'
 import { useBlockStore } from '../../stores/blocks.js'
 import { useHistoryStore } from '../../stores/history.js'
@@ -30,9 +42,26 @@ const contextMenu = ref({ visible: false, x: 0, y: 0, blockId: null })
 // Drag-select state
 const dragSelect = ref({ active: false, startX: 0, startY: 0, endX: 0, endY: 0 })
 
+// Memoized paper dimensions
+const paperDims = computed(() => canvasStore.paperDimensions)
+const zoom = computed(() => canvasStore.zoom)
+
+// Styles
+const workspaceStyle = computed(() => ({
+  flex: 1,
+  background: 'var(--color-workspace)',
+  overflow: 'auto',
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'center',
+  padding: '40px',
+  cursor: isPanning.value ? 'grabbing' : (spaceHeld.value ? 'grab' : 'default')
+}))
+
 const paperStyle = computed(() => {
-  const { width, height } = canvasStore.paperDimensions
-  const z = canvasStore.zoom
+  const { width, height } = paperDims.value
+  const z = zoom.value
   return {
     width: `${width}px`,
     height: `${height}px`,
@@ -43,17 +72,23 @@ const paperStyle = computed(() => {
     boxShadow: 'var(--shadow-paper)',
     overflow: 'hidden',
     flexShrink: 0,
+    willChange: 'transform',
   }
 })
 
 const workspaceContentStyle = computed(() => {
-  const { width, height } = canvasStore.paperDimensions
-  const z = canvasStore.zoom
+  const { width, height } = paperDims.value
+  const z = zoom.value
   return {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
     width: `${width * z}px`,
     height: `${height * z}px`,
     minWidth: `${width * z}px`,
     minHeight: `${height * z}px`,
+    transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
+    transition: isPanning.value ? 'none' : 'transform 0.1s ease',
   }
 })
 
@@ -76,35 +111,31 @@ function handleDragLeave() {
 function onKeyDown(e) {
   if (e.code === 'Space' && !spaceHeld.value) {
     const tag = document.activeElement?.tagName
-    if (tag === 'INPUT' || tag === 'TEXTAREA') return
+    const isEditable = document.activeElement?.contentEditable === 'true' || document.activeElement?.isContentEditable
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || isEditable) return
     e.preventDefault()
     spaceHeld.value = true
-    if (workspaceEl.value) workspaceEl.value.style.cursor = 'grab'
   }
 }
 
 function onKeyUp(e) {
   if (e.code === 'Space') {
     spaceHeld.value = false
-    if (workspaceEl.value) workspaceEl.value.style.cursor = ''
     isPanning.value = false
   }
 }
 
 function onMouseDown(e) {
   if (spaceHeld.value) {
-    // Pan mode
     isPanning.value = true
     panStart.value = { x: e.clientX - panOffset.value.x, y: e.clientY - panOffset.value.y }
-    if (workspaceEl.value) workspaceEl.value.style.cursor = 'grabbing'
     e.preventDefault()
     return
   }
 
-  // Drag-select on paper background
   if (e.target === paperEl.value) {
     const rect = paperEl.value.getBoundingClientRect()
-    const z = canvasStore.zoom
+    const z = zoom.value
     dragSelect.value = {
       active: true,
       startX: (e.clientX - rect.left) / z,
@@ -128,16 +159,15 @@ function onMouseMove(e) {
 
   if (dragSelect.value.active) {
     const rect = paperEl.value.getBoundingClientRect()
-    const z = canvasStore.zoom
+    const z = zoom.value
     dragSelect.value.endX = (e.clientX - rect.left) / z
     dragSelect.value.endY = (e.clientY - rect.top) / z
   }
 }
 
-function onMouseUp(e) {
+function onMouseUp() {
   if (isPanning.value) {
     isPanning.value = false
-    if (workspaceEl.value) workspaceEl.value.style.cursor = spaceHeld.value ? 'grab' : ''
     return
   }
 
@@ -167,12 +197,16 @@ function finalizeDragSelect() {
   blockStore.selectBlocks(selected)
 }
 
-// ─── Scroll to zoom ───────────────────────────────────────────
+// ─── Scroll to zoom (debounced) ─────────────────────────────
+const onWheelDebounced = debounce((deltaY) => {
+  const delta = deltaY > 0 ? -0.08 : 0.08
+  canvasStore.setZoom(zoom.value + delta)
+}, 16, { leading: true, trailing: true })
+
 function onWheel(e) {
   if (e.ctrlKey || e.metaKey) {
     e.preventDefault()
-    const delta = e.deltaY > 0 ? -0.08 : 0.08
-    canvasStore.setZoom(canvasStore.zoom + delta)
+    onWheelDebounced(e.deltaY)
   }
 }
 
@@ -199,7 +233,7 @@ function onWorkspaceClick(e) {
 const dragSelectStyle = computed(() => {
   if (!dragSelect.value.active) return null
   const { startX, startY, endX, endY } = dragSelect.value
-  const z = canvasStore.zoom
+  const z = zoom.value
   return {
     left: `${Math.min(startX, endX) * z}px`,
     top: `${Math.min(startY, endY) * z}px`,
@@ -213,56 +247,47 @@ const dragSelectStyle = computed(() => {
   }
 })
 
+// Event listeners
+const events = [
+  ['keydown', onKeyDown],
+  ['keyup', onKeyUp],
+  ['mouseup', onMouseUp],
+  ['mousemove', onMouseMove],
+  ['resize', () => {}] // Add any resize handlers
+]
+
 onMounted(() => {
-  window.addEventListener('keydown', onKeyDown)
-  window.addEventListener('keyup', onKeyUp)
-  window.addEventListener('mouseup', onMouseUp)
-  window.addEventListener('mousemove', onMouseMove)
+  events.forEach(([event, handler]) => {
+    window.addEventListener(event, handler)
+  })
 })
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', onKeyDown)
-  window.removeEventListener('keyup', onKeyUp)
-  window.removeEventListener('mouseup', onMouseUp)
-  window.removeEventListener('mousemove', onMouseMove)
+  events.forEach(([event, handler]) => {
+    window.removeEventListener(event, handler)
+  })
+  // Cancel any pending debounced calls
+  onWheelDebounced.cancel?.()
 })
 </script>
-
 <template>
   <main
     ref="workspaceEl"
     class="workspace"
-    style="
-      flex: 1;
-      background: var(--color-workspace);
-      overflow: auto;
-      position: relative;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding: 40px;
-    "
+    :style="workspaceStyle"
     @click="onWorkspaceClick"
     @mousedown="onMouseDown"
-    @wheel.passive="false"
     @wheel="onWheel"
     @contextmenu.prevent
   >
-    <!-- Scrollable inner area that shifts with pan offset -->
     <div
-      :style="{
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
-        transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
-        transition: isPanning ? 'none' : 'transform 0.1s ease',
-        ...workspaceContentStyle,
-      }"
+      class="workspace-content"
+      :style="workspaceContentStyle"
     >
-      <!-- Paper -->
       <div
         ref="paperEl"
         id="canvas-paper"
+        class="paper"
         :style="paperStyle"
         :class="{ 'drop-active': isDraggingOver }"
         @drop.prevent="handleDrop"
@@ -270,22 +295,12 @@ onUnmounted(() => {
         @dragleave="handleDragLeave"
         @contextmenu.prevent
       >
-        <!-- Margin indicator -->
-        <div class="margin-indicator" style="
-          position: absolute;
-          inset: 20px;
-          border: 1px dashed rgba(0,180,216,0.15);
-          pointer-events: none;
-          z-index: 0;
-        " />
+        <div class="margin-indicator" />
+        
+        <AlignmentGuides v-if="blockStore.selectedIds.length > 1" />
 
-        <!-- Alignment Guides (rendered inside paper) -->
-        <AlignmentGuides />
-
-        <!-- Drag-select rect -->
         <div v-if="dragSelect.active" :style="dragSelectStyle" />
 
-        <!-- Blocks -->
         <CanvasBlock
           v-for="block in blockStore.orderedBlocks"
           :key="block.id"
@@ -295,12 +310,10 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Zoom controls (bottom center) -->
-    <div class="print-hidden" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 50">
+    <div class="print-hidden zoom-controls">
       <ZoomControls />
     </div>
 
-    <!-- Context menu -->
     <ContextMenu
       v-if="contextMenu.visible"
       :x="contextMenu.x"
@@ -310,15 +323,45 @@ onUnmounted(() => {
     />
   </main>
 </template>
-
 <style scoped>
 .workspace::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
+.workspace::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
 .drop-active {
   outline: 2px dashed var(--color-accent) !important;
   outline-offset: -4px;
+}
+
+.margin-indicator {
+  position: absolute;
+  inset: 20px;
+  border: 1px dashed rgba(0, 180, 216, 0.15);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#canvas-paper {
+  will-change: transform;
+}
+
+.zoom-controls {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+}
+
+@media print {
+  .print-hidden {
+    display: none !important;
+  }
 }
 </style>

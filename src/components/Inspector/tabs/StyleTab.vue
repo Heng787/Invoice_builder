@@ -1,6 +1,8 @@
-<script setup>
+﻿<script setup>
 import { useBlockStore } from '../../../stores/blocks.js'
 import { useHistoryStore } from '../../../stores/history.js'
+import { useTranslateUi } from '../../../utils/translateUi.js'
+const { translateUi } = useTranslateUi()
 
 const props = defineProps({
   block: { type: Object, required: true }
@@ -29,9 +31,9 @@ function handleInput(prop, e, isNum = true) {
   <div class="tab-panel">
     <!-- Fill -->
     <div class="field-group">
-      <div class="field-label">Fill & Background</div>
+      <div class="field-label">{{ translateUi('Fill & Background') }}</div>
       <div class="field-single">
-        <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 4px">Background Color</label>
+        <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 4px">{{ translateUi('Background Color') }}</label>
         <div style="display: flex; gap: 8px; align-items: center">
           <input
             type="color"
@@ -56,10 +58,10 @@ function handleInput(prop, e, isNum = true) {
 
     <!-- Borders -->
     <div class="field-group">
-      <div class="field-label">Borders</div>
+      <div class="field-label">{{ translateUi('Borders') }}</div>
       <div class="field-row">
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Border Width</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Border Width') }}</label>
           <div class="field-unit">
             <input
               type="number"
@@ -74,7 +76,7 @@ function handleInput(prop, e, isNum = true) {
           </div>
         </div>
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Border Style</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Border Style') }}</label>
           <select
             :value="block.borderStyle ?? 'solid'"
             class="inp"
@@ -82,16 +84,16 @@ function handleInput(prop, e, isNum = true) {
             @change="handleInput('borderStyle', $event, false)"
             @blur="commitHistory"
           >
-            <option value="solid">Solid</option>
-            <option value="dashed">Dashed</option>
-            <option value="dotted">Dotted</option>
+            <option value="solid">{{ translateUi('Solid') }}</option>
+            <option value="dashed">{{ translateUi('Dashed') }}</option>
+            <option value="dotted">{{ translateUi('Dotted') }}</option>
           </select>
         </div>
       </div>
 
       <div class="field-row" style="margin-top: 8px">
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 4px">Border Color</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 4px">{{ translateUi('Border Color') }}</label>
           <div style="display: flex; gap: 6px; align-items: center">
             <input
               type="color"
@@ -113,7 +115,7 @@ function handleInput(prop, e, isNum = true) {
           </div>
         </div>
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Border Radius</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Border Radius') }}</label>
           <div class="field-unit">
             <input
               type="number"
@@ -132,10 +134,10 @@ function handleInput(prop, e, isNum = true) {
 
     <!-- Padding -->
     <div class="field-group">
-      <div class="field-label">Padding (Offsets)</div>
+      <div class="field-label">{{ translateUi('Padding (Offsets)') }}</div>
       <div class="field-row">
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Top</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Top') }}</label>
           <div class="field-unit">
             <input
               type="number"
@@ -150,7 +152,7 @@ function handleInput(prop, e, isNum = true) {
           </div>
         </div>
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Right</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Right') }}</label>
           <div class="field-unit">
             <input
               type="number"
@@ -167,7 +169,7 @@ function handleInput(prop, e, isNum = true) {
       </div>
       <div class="field-row" style="margin-top: 8px">
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Bottom</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Bottom') }}</label>
           <div class="field-unit">
             <input
               type="number"
@@ -182,7 +184,7 @@ function handleInput(prop, e, isNum = true) {
           </div>
         </div>
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Left</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Left') }}</label>
           <div class="field-unit">
             <input
               type="number"

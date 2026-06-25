@@ -1,7 +1,9 @@
-<script setup>
+﻿<script setup>
 import { computed } from 'vue'
 import { useBlockStore } from '../../../stores/blocks.js'
 import { useHistoryStore } from '../../../stores/history.js'
+import { useTranslateUi } from '../../../utils/translateUi.js'
+const { translateUi } = useTranslateUi()
 
 const props = defineProps({
   block: { type: Object, required: true }
@@ -35,10 +37,10 @@ function handleCheckbox(prop, e) {
   <div class="tab-panel">
     <!-- Position & Dimensions -->
     <div class="field-group">
-      <div class="field-label">Position & Size</div>
+      <div class="field-label">{{ translateUi('Position & Size') }}</div>
       <div class="field-row">
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">X Position</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('X Position') }}</label>
           <div class="field-unit">
             <input
               type="number"
@@ -52,7 +54,7 @@ function handleCheckbox(prop, e) {
           </div>
         </div>
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Y Position</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Y Position') }}</label>
           <div class="field-unit">
             <input
               type="number"
@@ -69,7 +71,7 @@ function handleCheckbox(prop, e) {
 
       <div class="field-row" style="margin-top: 8px">
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Width</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Width') }}</label>
           <div class="field-unit">
             <input
               type="number"
@@ -84,7 +86,7 @@ function handleCheckbox(prop, e) {
           </div>
         </div>
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Height</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Height') }}</label>
           <div class="field-unit">
             <input
               type="number"
@@ -103,10 +105,10 @@ function handleCheckbox(prop, e) {
 
     <!-- Transform -->
     <div class="field-group">
-      <div class="field-label">Transform</div>
+      <div class="field-label">{{ translateUi('Transform') }}</div>
       <div class="field-row">
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Rotation</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Rotation') }}</label>
           <div class="field-unit">
             <input
               type="number"
@@ -122,7 +124,7 @@ function handleCheckbox(prop, e) {
           </div>
         </div>
         <div>
-          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">Layer Order</label>
+          <label style="font-size: 10px; color: var(--color-panel-muted); display: block; margin-bottom: 2px">{{ translateUi('Layer Order') }}</label>
           <input
             type="number"
             :value="block.zIndex ?? 0"
@@ -135,7 +137,7 @@ function handleCheckbox(prop, e) {
 
       <div class="field-single" style="margin-top: 10px">
         <div style="display: flex; justify-content: space-between; margin-bottom: 4px">
-          <span style="font-size: 10px; color: var(--color-panel-muted)">Rotation Slider</span>
+          <span style="font-size: 10px; color: var(--color-panel-muted)">{{ translateUi('Rotation Slider') }}</span>
           <span style="font-size: 11px">{{ block.rotation ?? 0 }}°</span>
         </div>
         <input
@@ -153,12 +155,12 @@ function handleCheckbox(prop, e) {
 
     <!-- Visibility & States -->
     <div class="field-group">
-      <div class="field-label">Visibility & State</div>
+      <div class="field-label">{{ translateUi('Visibility & State') }}</div>
       
       <!-- Opacity -->
       <div class="field-single" style="margin-bottom: 14px">
         <div style="display: flex; justify-content: space-between; margin-bottom: 4px">
-          <span style="font-size: 10px; color: var(--color-panel-muted)">Opacity</span>
+          <span style="font-size: 10px; color: var(--color-panel-muted)">{{ translateUi('Opacity') }}</span>
           <span style="font-size: 11px">{{ Math.round((block.opacity ?? 1) * 100) }}%</span>
         </div>
         <input
@@ -178,8 +180,8 @@ function handleCheckbox(prop, e) {
       <div style="display: flex; flex-direction: column; gap: 10px">
         <div style="display: flex; align-items: center; justify-content: space-between">
           <div>
-            <span style="font-weight: 500; display: block">Lock Position</span>
-            <span style="font-size: 11px; color: var(--color-panel-muted)">Disable resizing and dragging</span>
+            <span style="font-weight: 500; display: block">{{ translateUi('Lock Position') }}</span>
+            <span style="font-size: 11px; color: var(--color-panel-muted)">{{ translateUi('Disable resizing and dragging') }}</span>
           </div>
           <label class="toggle">
             <input
@@ -193,8 +195,8 @@ function handleCheckbox(prop, e) {
 
         <div style="display: flex; align-items: center; justify-content: space-between">
           <div>
-            <span style="font-weight: 500; display: block">Hide on Print</span>
-            <span style="font-size: 11px; color: var(--color-panel-muted)">Exclude this block from exports</span>
+            <span style="font-weight: 500; display: block">{{ translateUi('Hide on Print') }}</span>
+            <span style="font-size: 11px; color: var(--color-panel-muted)">{{ translateUi('Exclude this block from exports') }}</span>
           </div>
           <label class="toggle">
             <input

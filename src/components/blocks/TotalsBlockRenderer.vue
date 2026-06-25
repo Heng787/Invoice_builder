@@ -3,11 +3,28 @@ import { computed, ref, watch, nextTick } from "vue";
 import { useCanvasStore } from "../../stores/canvas.js";
 import { useBlockStore } from "../../stores/blocks.js";
 import { useHistoryStore } from "../../stores/history.js";
+import { usePreviewStore } from "../../stores/preview.js";
+
+const previewStore = usePreviewStore();
+
+function getRowValue(bindingKey, designFallback) {
+    if (previewStore.isPreviewMode) {
+        if (!bindingKey) return designFallback;
+        const dataVal = previewStore.previewData[bindingKey];
+        if (dataVal !== undefined && dataVal !== null && dataVal !== "") {
+            return String(dataVal);
+        }
+        return designFallback;
+    }
+    return designFallback;
+}
 
 const props = defineProps({
     block: { type: Object, required: true },
     fillMode: { type: Boolean, default: false },
 });
+
+const getPlaceholder = (key) => key ? `{{${key}}}` : "";
 
 const canvasStore = useCanvasStore();
 const blockStore = useBlockStore();
@@ -77,7 +94,18 @@ const style = computed(() => ({
             </span>
             <span class="total-value" @click="editingField = 'subtotalValue'">
                 <input v-if="fillMode && editingField === 'subtotalValue'" :value="subtotalValue" class="totals-edit-input text-right" @input="updateProp('subtotalValue', $event.target.value)" @blur="editingField = null; commitHistory()" @keydown.enter="editingField = null; commitHistory()" @keydown.esc="editingField = null" />
-                <span v-else>{{ subtotalValue }}</span>
+                <template v-else>
+                    <template v-if="block.subtotalBindingKey">
+                        <div class="design-binding-only" style="display: flex; flex-direction: column; align-items: flex-end;">
+                            <span style="color: #00b4d8; font-weight: 600;">{{ getPlaceholder(block.subtotalBindingKey) }}</span>
+                            <span style="font-size: 9px; color: #718096; font-style: italic;">fallback: {{ subtotalValue }}</span>
+                        </div>
+                        <span class="preview-binding-only">
+                            {{ getRowValue(block.subtotalBindingKey, subtotalValue) }}
+                        </span>
+                    </template>
+                    <span v-else>{{ subtotalValue }}</span>
+                </template>
             </span>
         </div>
         <div v-if="block.showDiscount !== false" class="total-row">
@@ -87,7 +115,18 @@ const style = computed(() => ({
             </span>
             <span class="total-value" @click="editingField = 'discountValue'">
                 <input v-if="fillMode && editingField === 'discountValue'" :value="discountValue" class="totals-edit-input text-right" @input="updateProp('discountValue', $event.target.value)" @blur="editingField = null; commitHistory()" @keydown.enter="editingField = null; commitHistory()" @keydown.esc="editingField = null" />
-                <span v-else>{{ discountValue }}</span>
+                <template v-else>
+                    <template v-if="block.discountBindingKey">
+                        <div class="design-binding-only" style="display: flex; flex-direction: column; align-items: flex-end;">
+                            <span style="color: #00b4d8; font-weight: 600;">{{ getPlaceholder(block.discountBindingKey) }}</span>
+                            <span style="font-size: 9px; color: #718096; font-style: italic;">fallback: {{ discountValue }}</span>
+                        </div>
+                        <span class="preview-binding-only">
+                            {{ getRowValue(block.discountBindingKey, discountValue) }}
+                        </span>
+                    </template>
+                    <span v-else>{{ discountValue }}</span>
+                </template>
             </span>
         </div>
         <div v-if="block.showTax !== false" class="total-row">
@@ -97,7 +136,18 @@ const style = computed(() => ({
             </span>
             <span class="total-value" @click="editingField = 'taxValue'">
                 <input v-if="fillMode && editingField === 'taxValue'" :value="taxValue" class="totals-edit-input text-right" @input="updateProp('taxValue', $event.target.value)" @blur="editingField = null; commitHistory()" @keydown.enter="editingField = null; commitHistory()" @keydown.esc="editingField = null" />
-                <span v-else>{{ taxValue }}</span>
+                <template v-else>
+                    <template v-if="block.taxBindingKey">
+                        <div class="design-binding-only" style="display: flex; flex-direction: column; align-items: flex-end;">
+                            <span style="color: #00b4d8; font-weight: 600;">{{ getPlaceholder(block.taxBindingKey) }}</span>
+                            <span style="font-size: 9px; color: #718096; font-style: italic;">fallback: {{ taxValue }}</span>
+                        </div>
+                        <span class="preview-binding-only">
+                            {{ getRowValue(block.taxBindingKey, taxValue) }}
+                        </span>
+                    </template>
+                    <span v-else>{{ taxValue }}</span>
+                </template>
             </span>
         </div>
         <div v-if="block.showTotal !== false" class="total-row total-grand">
@@ -107,7 +157,18 @@ const style = computed(() => ({
             </span>
             <span class="total-value font-bold" @click="editingField = 'totalValue'">
                 <input v-if="fillMode && editingField === 'totalValue'" :value="totalValue" class="totals-edit-input text-right font-bold" @input="updateProp('totalValue', $event.target.value)" @blur="editingField = null; commitHistory()" @keydown.enter="editingField = null; commitHistory()" @keydown.esc="editingField = null" />
-                <span v-else>{{ totalValue }}</span>
+                <template v-else>
+                    <template v-if="block.totalBindingKey">
+                        <div class="design-binding-only" style="display: flex; flex-direction: column; align-items: flex-end;">
+                            <span style="color: #00b4d8; font-weight: 600;">{{ getPlaceholder(block.totalBindingKey) }}</span>
+                            <span style="font-size: 9px; color: #718096; font-style: italic;">fallback: {{ totalValue }}</span>
+                        </div>
+                        <span class="preview-binding-only">
+                            {{ getRowValue(block.totalBindingKey, totalValue) }}
+                        </span>
+                    </template>
+                    <span v-else>{{ totalValue }}</span>
+                </template>
             </span>
         </div>
         <div v-if="block.showBalance" class="total-row total-balance">
@@ -117,7 +178,18 @@ const style = computed(() => ({
             </span>
             <span class="total-value font-bold text-danger" @click="editingField = 'balanceValue'">
                 <input v-if="fillMode && editingField === 'balanceValue'" :value="balanceValue" class="totals-edit-input text-right font-bold text-danger" @input="updateProp('balanceValue', $event.target.value)" @blur="editingField = null; commitHistory()" @keydown.enter="editingField = null; commitHistory()" @keydown.esc="editingField = null" />
-                <span v-else>{{ balanceValue }}</span>
+                <template v-else>
+                    <template v-if="block.balanceBindingKey">
+                        <div class="design-binding-only" style="display: flex; flex-direction: column; align-items: flex-end;">
+                            <span style="color: #00b4d8; font-weight: 600;">{{ getPlaceholder(block.balanceBindingKey) }}</span>
+                            <span style="font-size: 9px; color: #718096; font-style: italic;">fallback: {{ balanceValue }}</span>
+                        </div>
+                        <span class="preview-binding-only">
+                            {{ getRowValue(block.balanceBindingKey, balanceValue) }}
+                        </span>
+                    </template>
+                    <span v-else>{{ balanceValue }}</span>
+                </template>
             </span>
         </div>
     </div>

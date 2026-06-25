@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import { useBlockStore } from "../../stores/blocks.js";
 import { useCanvasStore } from "../../stores/canvas.js";
 import { useHistoryStore } from "../../stores/history.js";
+import { usePreviewStore } from "../../stores/preview.js";
 import {
     computeAlignmentGuides,
     clearGuides,
@@ -87,10 +88,12 @@ const props = defineProps({
 const blockStore = useBlockStore();
 const canvasStore = useCanvasStore();
 const historyStore = useHistoryStore();
+const previewStore = usePreviewStore();
 
-const isSelected = computed(() =>
-    blockStore.selectedIds.includes(props.block.id),
-);
+const isSelected = computed(() => {
+    if (previewStore.isPreviewMode) return false;
+    return blockStore.selectedIds.includes(props.block.id);
+});
 const isMultiSelected = computed(
     () => blockStore.selectedIds.length > 1 && isSelected.value,
 );
@@ -99,6 +102,7 @@ const renderer = computed(
 );
 const isEditing = computed(() => canvasStore.editingBlockId === props.block.id);
 const hasPointerEvents = computed(() => {
+    if (previewStore.isPreviewMode) return true;
     if (isEditing.value) return true;
     if (props.block.type === 'item_table' && isSelected.value) return true;
     return false;
@@ -130,16 +134,18 @@ const blockStyle = computed(() => {
         transform: `rotate(${b.rotation ?? 0}deg)`,
         opacity: b.opacity ?? 1,
         zIndex: b.zIndex ?? 0,
-        userSelect: "none",
+        userSelect: previewStore.isPreviewMode ? "text" : "none",
         pointerEvents: b.hidden ? "none" : "auto",
         visibility: b.hidden ? "hidden" : "visible",
-        cursor: isEditing.value
+        cursor: previewStore.isPreviewMode
             ? "default"
-            : b.locked
-              ? "default"
-              : moving.value
-                ? "grabbing"
-                : "grab",
+            : (isEditing.value
+                ? "default"
+                : b.locked
+                  ? "default"
+                  : moving.value
+                    ? "grabbing"
+                    : "grab"),
         transition:
             moving.value || resizing.value || rotating.value
                 ? "none"
@@ -149,12 +155,13 @@ const blockStyle = computed(() => {
 
 // ─── Move & Edit ──────────────────────────────────────────────
 function onDblClick(e) {
-    if (props.block.locked) return;
+    if (previewStore.isPreviewMode || props.block.locked) return;
     e.stopPropagation();
     canvasStore.editingBlockId = props.block.id;
 }
 
 function onMouseDown(e) {
+    if (previewStore.isPreviewMode) return;
     if (props.block.locked) return;
     if (e.button !== 0) return;
     e.stopPropagation();
@@ -171,8 +178,8 @@ function onMouseDown(e) {
         return;
     }
 
-    if (isSelected.value && !isEditing.value) {
-        // Single click when already selected enters edit mode
+    if (isSelected.value && !isEditing.value && props.block.type !== 'item_table') {
+        // Single click when already selected enters edit mode (not for tables — use dblclick)
         canvasStore.editingBlockId = props.block.id;
     }
 
@@ -387,7 +394,9 @@ function applyTableStyle(prop, val) {
 
 // ─── Resize ───────────────────────────────────────────────────
 function onResizeStart(e, handle) {
-    if (isEditing.value) return;
+    // For item_table, always allow resize even while in editing mode
+    // (the handle's mousedown.stop isolates the event from the table internals)
+    if (isEditing.value && props.block.type !== 'item_table') return;
     e.stopPropagation();
     e.preventDefault();
     resizing.value = true;

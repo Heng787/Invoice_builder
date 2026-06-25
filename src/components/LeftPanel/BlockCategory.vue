@@ -1,9 +1,11 @@
-<script setup>
+﻿<script setup>
 import { computed } from 'vue'
 import BlockItem from './BlockItem.vue'
 import { BLOCK_META } from '../../constants/blockMeta.js'
 import { ChevronDown, ChevronRight } from '@lucide/vue'
 import * as icons from '@lucide/vue'
+import { useTranslateUi } from '../../utils/translateUi.js'
+const { translateUi } = useTranslateUi()
 
 const props = defineProps({
   category: { type: Object, required: true },
@@ -38,7 +40,7 @@ const visibleBlocks = computed(() =>
     >
       <component :is="CategoryIcon" :size="13" style="color: var(--color-accent); flex-shrink: 0" />
       <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; flex: 1; color: var(--color-panel-muted); text-align: left">
-        {{ category.label }}
+        {{ translateUi(category.label) }}
       </span>
       <ChevronDown v-if="!collapsed" :size="12" style="color: var(--color-panel-muted)" />
       <ChevronRight v-else :size="12" style="color: var(--color-panel-muted)" />

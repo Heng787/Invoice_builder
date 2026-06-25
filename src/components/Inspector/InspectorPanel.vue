@@ -20,10 +20,14 @@ import {
 import LayoutTab from "./tabs/LayoutTab.vue";
 import StyleTab from "./tabs/StyleTab.vue";
 import TextTab from "./tabs/TextTab.vue";
+import BindingTab from "./tabs/BindingTab.vue";
 import DataTab from "./tabs/DataTab.vue";
 import BlockTab from "./tabs/BlockTab.vue";
 import ResponsiveTab from "./tabs/ResponsiveTab.vue";
 import HistoryTab from "./tabs/HistoryTab.vue";
+
+import { useTranslateUi } from "../../utils/translateUi.js";
+const { translateUi } = useTranslateUi();
 
 const blockStore = useBlockStore();
 const inspectorStore = useInspectorStore();
@@ -39,6 +43,7 @@ const tabs = [
     { id: "layout", label: "Layout" },
     { id: "style", label: "Style" },
     { id: "text", label: "Text" },
+    { id: "binding", label: "Binding" },
     { id: "data", label: "Data" },
     { id: "block", label: "Block" },
     { id: "responsive", label: "Responsive" },
@@ -79,6 +84,24 @@ const visibleTabs = computed(() => {
                 "amount_in_words",
                 "receipt_header",
                 "receipt_footer",
+            ].includes(type);
+        }
+        if (tab.id === "binding") {
+            return [
+                "text",
+                "document_header",
+                "totals_block",
+                "subtotal",
+                "discount",
+                "tax",
+                "grand_total",
+                "balance_due",
+                "deposit_paid",
+                "amount_in_words",
+                "receipt_header",
+                "receipt_footer",
+                "signature_line",
+                "item_table",
             ].includes(type);
         }
         if (tab.id === "data") {
@@ -128,6 +151,8 @@ const activeTabComponent = computed(() => {
             return StyleTab;
         case "text":
             return TextTab;
+        case "binding":
+            return BindingTab;
         case "data":
             return DataTab;
         case "block":
@@ -200,7 +225,7 @@ const formatBlockName = (type) => {
             flex-shrink: 0;
         "
     >
-        <div class="panel-header">Inspector</div>
+        <div class="panel-header">{{ translateUi('Inspector') }}</div>
 
         <div
             v-if="isFillMode"
@@ -215,7 +240,7 @@ const formatBlockName = (type) => {
                 letter-spacing: 0.05em;
             "
         >
-            ✏ FILL MODE — Click any block to type
+            ✏ {{ translateUi('FILL MODE — Click any block to type') }}
         </div>
 
         <!-- Empty State -->
@@ -223,9 +248,9 @@ const formatBlockName = (type) => {
             <div class="empty-state-icon">
                 <Settings :size="24" class="text-panel-muted" />
             </div>
-            <p style="font-weight: 500">No Block Selected</p>
+            <p style="font-weight: 500">{{ translateUi('No Block Selected') }}</p>
             <p style="font-size: 11px; max-width: 200px">
-                Select a block on the canvas to inspect and edit its properties.
+                {{ translateUi('Select a block on the canvas to inspect and edit its properties.') }}
             </p>
         </div>
 
@@ -258,7 +283,7 @@ const formatBlockName = (type) => {
                             text-transform: uppercase;
                         "
                     >
-                        {{ block.type }}
+                        {{ translateUi(block.type) }}
                     </span>
                     <h4
                         style="
@@ -268,7 +293,7 @@ const formatBlockName = (type) => {
                             margin: 0;
                         "
                     >
-                        {{ formatBlockName(block.type) }}
+                        {{ translateUi(formatBlockName(block.type)) }}
                     </h4>
                 </div>
 
@@ -278,7 +303,7 @@ const formatBlockName = (type) => {
                     <button
                         class="btn btn-ghost btn-icon"
                         :data-tooltip="
-                            block.locked ? 'Unlock Block' : 'Lock Block'
+                            block.locked ? translateUi('Unlock Block') : translateUi('Lock Block')
                         "
                         @click="toggleLock"
                     >
@@ -291,7 +316,7 @@ const formatBlockName = (type) => {
                     <!-- Duplicate -->
                     <button
                         class="btn btn-ghost btn-icon"
-                        data-tooltip="Duplicate Block"
+                        :data-tooltip="translateUi('Duplicate Block')"
                         :disabled="block.locked"
                         @click="handleDuplicate"
                     >
@@ -301,7 +326,7 @@ const formatBlockName = (type) => {
                     <!-- Reordering -->
                     <button
                         class="btn btn-ghost btn-icon"
-                        data-tooltip="Bring Forward"
+                        :data-tooltip="translateUi('Bring Forward')"
                         :disabled="block.locked"
                         @click="moveUp"
                     >
@@ -309,7 +334,7 @@ const formatBlockName = (type) => {
                     </button>
                     <button
                         class="btn btn-ghost btn-icon"
-                        data-tooltip="Send Backward"
+                        :data-tooltip="translateUi('Send Backward')"
                         :disabled="block.locked"
                         @click="moveDown"
                     >
@@ -319,7 +344,7 @@ const formatBlockName = (type) => {
                     <!-- Delete -->
                     <button
                         class="btn btn-ghost btn-icon text-danger"
-                        data-tooltip="Delete Block"
+                        :data-tooltip="translateUi('Delete Block')"
                         @click="handleDelete"
                     >
                         <Trash2 :size="13" />
@@ -336,7 +361,7 @@ const formatBlockName = (type) => {
                     :class="{ active: activeTabId === tab.id }"
                     @click="inspectorStore.setTab(tab.id)"
                 >
-                    {{ tab.label }}
+                    {{ translateUi(tab.label) }}
                 </button>
             </div>
 

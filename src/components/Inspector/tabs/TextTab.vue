@@ -1,8 +1,10 @@
-<script setup>
+﻿<script setup>
 import { computed } from "vue";
 import { useBlockStore } from "../../../stores/blocks.js";
 import { useHistoryStore } from "../../../stores/history.js";
 import { useSettingsStore } from "../../../stores/settings.js";
+import { useTranslateUi } from '../../../utils/translateUi.js'
+const { translateUi } = useTranslateUi();
 import { AlignLeft, AlignCenter, AlignRight, AlignJustify } from "@lucide/vue";
 
 const props = defineProps({
@@ -33,9 +35,9 @@ function handleInput(prop, e, isNum = true) {
     <div class="tab-panel">
         <!-- Content (Keep only structural controls) -->
         <div v-if="['field_row', 'issue_date', 'due_date', 'reference_number'].includes(block.type)" class="field-group">
-            <div class="field-label">Layout</div>
+            <div class="field-label">{{ translateUi('Layout') }}</div>
             <div class="field-single">
-                <label class="sub-label">Label Width %</label>
+                <label class="sub-label">{{ translateUi('Label Width %') }}</label>
                 <div class="field-unit">
                     <input
                         type="number"
@@ -47,14 +49,14 @@ function handleInput(prop, e, isNum = true) {
                         @input="handleInput('labelWidth', $event)"
                         @blur="commitHistory"
                     />
-                    <span class="field-unit-label">%</span>
+                    <span class="field-unit-label">{{ translateUi('%') }}</span>
                 </div>
             </div>
         </div>
 
         <!-- Font Family & Size -->
         <div class="field-group">
-            <div class="field-label">Typography</div>
+            <div class="field-label">{{ translateUi('Typography') }}</div>
             <div class="field-single">
                 <label
                     style="
@@ -63,8 +65,7 @@ function handleInput(prop, e, isNum = true) {
                         display: block;
                         margin-bottom: 2px;
                     "
-                    >Font Family</label
-                >
+                    >{{ translateUi('Font Family') }}</label>
                 <select
                     :value="block.fontFamily ?? 'inherit'"
                     class="inp"
@@ -73,7 +74,7 @@ function handleInput(prop, e, isNum = true) {
                     @blur="commitHistory"
                 >
                     <option value="inherit">
-                        Use Global Font ({{
+                        {{ translateUi('Use Global Font') }} ({{
                             settingsStore.fonts.find(
                                 (f) => f.value === settingsStore.globalFont,
                             )?.name ?? "Noto Sans"
@@ -98,8 +99,7 @@ function handleInput(prop, e, isNum = true) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Font Size</label
-                    >
+                        >{{ translateUi('Font Size') }}</label>
                     <div class="field-unit">
                         <input
                             type="number"
@@ -111,7 +111,7 @@ function handleInput(prop, e, isNum = true) {
                             @input="handleInput('fontSize', $event)"
                             @blur="commitHistory"
                         />
-                        <span class="field-unit-label">px</span>
+                        <span class="field-unit-label">{{ translateUi('px') }}</span>
                     </div>
                 </div>
                 <div>
@@ -122,8 +122,7 @@ function handleInput(prop, e, isNum = true) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Font Weight</label
-                    >
+                        >{{ translateUi('Font Weight') }}</label>
                     <select
                         :value="block.fontWeight ?? 'normal'"
                         class="inp"
@@ -131,12 +130,12 @@ function handleInput(prop, e, isNum = true) {
                         @change="handleInput('fontWeight', $event, false)"
                         @blur="commitHistory"
                     >
-                        <option value="normal">Normal (400)</option>
-                        <option value="bold">Bold (700)</option>
-                        <option value="300">Light (300)</option>
-                        <option value="500">Medium (500)</option>
-                        <option value="600">Semi-Bold (600)</option>
-                        <option value="800">Extra-Bold (800)</option>
+                        <option value="normal">{{ translateUi('Normal (400)') }}</option>
+                        <option value="bold">{{ translateUi('Bold (700)') }}</option>
+                        <option value="300">{{ translateUi('Light (300)') }}</option>
+                        <option value="500">{{ translateUi('Medium (500)') }}</option>
+                        <option value="600">{{ translateUi('Semi-Bold (600)') }}</option>
+                        <option value="800">{{ translateUi('Extra-Bold (800)') }}</option>
                     </select>
                 </div>
             </div>
@@ -144,7 +143,7 @@ function handleInput(prop, e, isNum = true) {
 
         <!-- Style, Color & Alignment -->
         <div class="field-group">
-            <div class="field-label">Color & Alignment</div>
+            <div class="field-label">{{ translateUi('Color & Alignment') }}</div>
 
             <div class="field-single" style="margin-bottom: 10px">
                 <label
@@ -154,8 +153,7 @@ function handleInput(prop, e, isNum = true) {
                         display: block;
                         margin-bottom: 4px;
                     "
-                    >Text Color</label
-                >
+                    >{{ translateUi('Text Color') }}</label>
                 <div style="display: flex; gap: 8px; align-items: center">
                     <input
                         type="color"
@@ -173,7 +171,7 @@ function handleInput(prop, e, isNum = true) {
                         type="text"
                         :value="block.color ?? '#000000'"
                         class="inp"
-                        placeholder="#000000"
+                        :placeholder="translateUi('#000000')"
                         :disabled="block.locked"
                         @input="updateProp('color', $event.target.value)"
                         @blur="commitHistory"
@@ -189,8 +187,7 @@ function handleInput(prop, e, isNum = true) {
                         display: block;
                         margin-bottom: 4px;
                     "
-                    >Alignment</label
-                >
+                    >{{ translateUi('Alignment') }}</label>
                 <div
                     style="
                         display: flex;
@@ -233,7 +230,7 @@ function handleInput(prop, e, isNum = true) {
 
         <!-- Spacing & Advanced -->
         <div class="field-group">
-            <div class="field-label">Spacing & Formatting</div>
+            <div class="field-label">{{ translateUi('Spacing & Formatting') }}</div>
 
             <div class="field-row">
                 <div>
@@ -244,8 +241,7 @@ function handleInput(prop, e, isNum = true) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Line Height</label
-                    >
+                        >{{ translateUi('Line Height') }}</label>
                     <input
                         type="number"
                         :value="block.lineHeight ?? 1.5"
@@ -266,8 +262,7 @@ function handleInput(prop, e, isNum = true) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Letter Spacing</label
-                    >
+                        >{{ translateUi('Letter Spacing') }}</label>
                     <div class="field-unit">
                         <input
                             type="number"
@@ -278,7 +273,7 @@ function handleInput(prop, e, isNum = true) {
                             @input="handleInput('letterSpacing', $event)"
                             @blur="commitHistory"
                         />
-                        <span class="field-unit-label">px</span>
+                        <span class="field-unit-label">{{ translateUi('px') }}</span>
                     </div>
                 </div>
             </div>
@@ -292,8 +287,7 @@ function handleInput(prop, e, isNum = true) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Decoration</label
-                    >
+                        >{{ translateUi('Decoration') }}</label>
                     <select
                         :value="block.textDecoration ?? 'none'"
                         class="inp"
@@ -301,9 +295,9 @@ function handleInput(prop, e, isNum = true) {
                         @change="handleInput('textDecoration', $event, false)"
                         @blur="commitHistory"
                     >
-                        <option value="none">None</option>
-                        <option value="underline">Underline</option>
-                        <option value="line-through">Line Through</option>
+                        <option value="none">{{ translateUi('None') }}</option>
+                        <option value="underline">{{ translateUi('Underline') }}</option>
+                        <option value="line-through">{{ translateUi('Line Through') }}</option>
                     </select>
                 </div>
                 <div>
@@ -314,8 +308,7 @@ function handleInput(prop, e, isNum = true) {
                             display: block;
                             margin-bottom: 2px;
                         "
-                        >Transform</label
-                    >
+                        >{{ translateUi('Transform') }}</label>
                     <select
                         :value="block.textTransform ?? 'none'"
                         class="inp"
@@ -323,10 +316,10 @@ function handleInput(prop, e, isNum = true) {
                         @change="handleInput('textTransform', $event, false)"
                         @blur="commitHistory"
                     >
-                        <option value="none">Normal</option>
-                        <option value="uppercase">UPPERCASE</option>
-                        <option value="lowercase">lowercase</option>
-                        <option value="capitalize">Capitalize</option>
+                        <option value="none">{{ translateUi('Normal') }}</option>
+                        <option value="uppercase">{{ translateUi('UPPERCASE') }}</option>
+                        <option value="lowercase">{{ translateUi('lowercase') }}</option>
+                        <option value="capitalize">{{ translateUi('Capitalize') }}</option>
                     </select>
                 </div>
             </div>

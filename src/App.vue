@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, watch } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 import TopBar from './components/TopBar/TopBar.vue'
 import LeftPanel from './components/LeftPanel/LeftPanel.vue'
 import CanvasWorkspace from './components/Canvas/CanvasWorkspace.vue'
 import InspectorPanel from './components/Inspector/InspectorPanel.vue'
+import PreviewDataPanel from './components/Inspector/PreviewDataPanel.vue'
 import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts.js'
 import { useExport } from './composables/useExport.js'
 import { useHistoryStore } from './stores/history.js'
@@ -11,6 +12,7 @@ import { useBlockStore } from './stores/blocks.js'
 import { useCanvasStore } from './stores/canvas.js'
 import { useSettingsStore } from './stores/settings.js'
 import { useTemplateStore } from './stores/template.js'
+import { usePreviewStore } from './stores/preview.js'
 
 useKeyboardShortcuts()
 useExport()
@@ -20,8 +22,32 @@ const blockStore = useBlockStore()
 const canvasStore = useCanvasStore()
 const settingsStore = useSettingsStore()
 const templateStore = useTemplateStore()
+const previewStore = usePreviewStore()
+
+let originalPreviewMode = false
+let originalZoom = 1
+let originalFillMode = false
+
+const handleBeforePrint = () => {
+  originalPreviewMode = previewStore.isPreviewMode
+  originalZoom = canvasStore.zoom
+  originalFillMode = canvasStore.fillMode
+
+  previewStore.setPreviewMode(true)
+  canvasStore.setZoom(1)
+  canvasStore.setFillMode(false)
+}
+
+const handleAfterPrint = () => {
+  previewStore.setPreviewMode(originalPreviewMode)
+  canvasStore.setZoom(originalZoom)
+  canvasStore.setFillMode(originalFillMode)
+}
 
 onMounted(() => {
+  window.addEventListener('beforeprint', handleBeforePrint)
+  window.addEventListener('afterprint', handleAfterPrint)
+
   // Load draft from localStorage if it exists
   const draftStr = localStorage.getItem('invoice_builder_draft')
   let loaded = false
@@ -33,6 +59,7 @@ onMounted(() => {
         if (draft.format) canvasStore.setFormat(draft.format)
         if (draft.orientation) canvasStore.setOrientation(draft.orientation)
         if (draft.name) templateStore.currentTemplateName = draft.name
+        if (draft.templateId) templateStore.currentTemplateId = draft.templateId
         if (draft.settings) {
           if (draft.settings.company) settingsStore.setCompany(draft.settings.company)
           if (draft.settings.documentType) settingsStore.setDocumentType(draft.settings.documentType)
@@ -62,6 +89,11 @@ onMounted(() => {
   })
 })
 
+onUnmounted(() => {
+  window.removeEventListener('beforeprint', handleBeforePrint)
+  window.removeEventListener('afterprint', handleAfterPrint)
+})
+
 // Auto-save watch
 watch(
   [
@@ -74,10 +106,12 @@ watch(
     () => settingsStore.globalFont,
     () => settingsStore.globalFontSize,
     () => templateStore.currentTemplateName,
+    () => templateStore.currentTemplateId,
   ],
   () => {
     const schema = {
       name: templateStore.currentTemplateName,
+      templateId: templateStore.currentTemplateId,
       format: canvasStore.formatId,
       orientation: canvasStore.orientation,
       blocks: JSON.parse(JSON.stringify(blockStore.blocks)),
@@ -96,12 +130,13 @@ watch(
 </script>
 
 <template>
-  <div class="app-layout">
+  <div class="app-layout" :class="{ 'preview-mode-active': previewStore.isPreviewMode }">
     <TopBar />
     <div class="app-main">
-      <LeftPanel />
+      <LeftPanel v-if="!previewStore.isPreviewMode" />
       <CanvasWorkspace />
-      <InspectorPanel />
+      <PreviewDataPanel v-if="previewStore.isPreviewMode" />
+      <InspectorPanel v-else />
     </div>
   </div>
 </template>

@@ -542,6 +542,28 @@ select.inp option {
     flex-shrink: 0;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
     z-index: 100;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+}
+
+.topbar > * {
+    flex-shrink: 0;
+}
+
+/* Custom Scrollbar for TopBar */
+.topbar::-webkit-scrollbar {
+    height: 4px;
+}
+.topbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.topbar::-webkit-scrollbar-thumb {
+    background: var(--color-panel-border);
+    border-radius: 2px;
+}
+.topbar::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent);
 }
 
 .topbar-logo {
@@ -809,6 +831,33 @@ select.inp option {
 }
 
 /* ============================================================
+   Design vs Preview/Print Binding Classes
+   ============================================================ */
+/* Default: show design binding info, hide preview binding info */
+.preview-binding-only {
+    display: none !important;
+}
+.design-binding-only {
+    display: block !important;
+}
+
+/* Preview Mode overrides */
+.preview-mode-active .preview-binding-only {
+    display: block !important;
+}
+.preview-mode-active .design-binding-only {
+    display: none !important;
+}
+
+/* Container preview mode overrides */
+.preview-mode-active .container-renderer.no-custom-border {
+    border: none !important;
+}
+.preview-mode-active .container-renderer .container-helper-label {
+    display: none !important;
+}
+
+/* ============================================================
    Print Stylesheet — hides all UI, shows only the paper
    ============================================================ */
 @media print {
@@ -825,11 +874,32 @@ select.inp option {
     .resize-handle,
     .rotate-handle,
     .guide-line,
-    .canvas-block.selected,
     .print-hidden,
     [data-tooltip]::after {
         display: none !important;
         visibility: hidden !important;
+    }
+
+    /* Hide selection outlines in print */
+    .canvas-block {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Synchronously force preview bindings visibility and hide design bindings in print */
+    .preview-binding-only {
+        display: block !important;
+    }
+    .design-binding-only {
+        display: none !important;
+    }
+
+    /* Synchronously hide container outlines and helper labels in print */
+    .container-renderer.no-custom-border {
+        border: none !important;
+    }
+    .container-renderer .container-helper-label {
+        display: none !important;
     }
 
     /* Reset app layout containers to static block flow so height collapses perfectly */

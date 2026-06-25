@@ -3,12 +3,14 @@ import { computed, ref, nextTick, watch, onMounted, onUnmounted } from "vue";
 import { useBlockStore } from "../../stores/blocks.js";
 import { useHistoryStore } from "../../stores/history.js";
 import { useCanvasStore } from "../../stores/canvas.js";
+import { usePreviewStore } from "../../stores/preview.js";
 // Column resize
 const resizingCol = ref(null)
 const resizeStartX = ref(0)
 const resizeStartWidth = ref(0)
 
 function onColResizeStart(colId, event) {
+  if (previewStore.isPreviewMode) return
   event.preventDefault()
   event.stopPropagation()
   resizingCol.value = colId
@@ -49,6 +51,7 @@ const resizeStartY = ref(0)
 const resizeStartHeight = ref(0)
 
 function onRowResizeStart(rowIndex, event) {
+  if (previewStore.isPreviewMode) return
   event.preventDefault()
   event.stopPropagation()
   resizingRow.value = rowIndex
@@ -83,12 +86,40 @@ const props = defineProps({
 const blockStore = useBlockStore();
 const historyStore = useHistoryStore();
 const canvasStore = useCanvasStore();
+const previewStore = usePreviewStore();
 
 const visibleColumns = computed(() =>
     (props.block.columns ?? []).filter((c) => c.visible !== false),
 );
 
-const items = computed(() => props.block.items ?? []);
+const previewItems = computed(() => {
+    if (!previewStore.isPreviewMode) return [];
+    const arraySource = props.block.arraySource;
+    if (!arraySource) return [];
+    
+    const dataArray = previewStore.previewData[arraySource];
+    if (!dataArray || !Array.isArray(dataArray)) return [];
+    
+    return dataArray.map((rowData, rowIndex) => {
+        const itemObj = {};
+        (props.block.columns || []).forEach((col) => {
+            if (col.id === 'no') {
+                itemObj[col.id] = String(rowIndex + 1);
+            } else {
+                const bindingKey = col.binding;
+                itemObj[col.id] = bindingKey ? (rowData[bindingKey] ?? "") : "";
+            }
+        });
+        return itemObj;
+    });
+});
+
+const currentItems = computed(() => {
+    if (previewStore.isPreviewMode) {
+        return previewItems.value;
+    }
+    return props.block.items ?? [];
+});
 
 const tableStyle = computed(() => ({
     width: "100%",
@@ -96,7 +127,7 @@ const tableStyle = computed(() => ({
     fontFamily: props.block.fontFamily ?? "inherit",
     fontSize: `${props.block.bodyFontSize ?? 12}px`,
     boxSizing: "border-box",
-    layout: "fixed",
+    tableLayout: "fixed",   // was "layout" (invalid) — must be "tableLayout"
 }));
 
 const borderColor = computed(() => props.block.borderColor ?? "#e0e0e0");
@@ -171,14 +202,27 @@ function getCellBorderStyles(r, colId, isDataRow) {
     return { borderTop: resolve(override.top), borderBottom: resolve(override.bottom), borderLeft: resolve(override.left), borderRight: resolve(override.right) };
 }
 
-const emptyRows = computed(() => Array(Math.max(0, (props.block.emptyRows ?? 0) - items.value.length)).fill(null));
+const emptyRowsCount = computed(() => {
+    if (previewStore.isPreviewMode) {
+        if (props.block.showEmptyRowsInPreview === false) {
+            return 0;
+        }
+        const minEmpty = props.block.minEmptyRows ?? 5;
+        return Math.max(0, minEmpty - previewItems.value.length);
+    }
+    return Math.max(0, (props.block.emptyRows ?? 0) - currentItems.value.length);
+});
+
+const emptyRows = computed(() => Array(emptyRowsCount.value).fill(null));
 
 const allRows = computed(() => {
     const list = [];
-    items.value.forEach((item, i) => list.push({ index: i, isDataRow: true, item, localIndex: i }));
-    emptyRows.value.forEach((_, i) => list.push({ index: items.value.length + i, isDataRow: false, item: null, localIndex: i }));
+    currentItems.value.forEach((item, i) => list.push({ index: i, isDataRow: true, item, localIndex: i }));
+    emptyRows.value.forEach((_, i) => list.push({ index: currentItems.value.length + i, isDataRow: false, item: null, localIndex: i }));
     return list;
 });
+
+const getTooltipText = (binding) => binding ? `{{${binding}}}` : "";
 
 const isBlockSelected = computed(() => blockStore.selectedIds.includes(props.block.id));
 
@@ -198,6 +242,7 @@ function closeContextMenu() {
 }
 
 function onCellContextMenu(r, colId, event) {
+    if (previewStore.isPreviewMode) return;
     if (!isBlockSelected.value) return;
     event.preventDefault(); event.stopPropagation();
     contextMenu.value = { visible: true, x: event.clientX, y: event.clientY, type: 'cell', r, colId };
@@ -205,6 +250,7 @@ function onCellContextMenu(r, colId, event) {
 }
 
 function onRowNumberContextMenu(r, event) {
+    if (previewStore.isPreviewMode) return;
     if (!isBlockSelected.value) return;
     event.preventDefault(); event.stopPropagation();
     contextMenu.value = { visible: true, x: event.clientX, y: event.clientY, type: 'row_number', r, colId: 'no' };
@@ -212,6 +258,7 @@ function onRowNumberContextMenu(r, event) {
 }
 
 function onColumnHeaderContextMenu(col, event) {
+    if (previewStore.isPreviewMode) return;
     if (!isBlockSelected.value) return;
     event.preventDefault(); event.stopPropagation();
     contextMenu.value = { visible: true, x: event.clientX, y: event.clientY, type: 'column_header', r: null, colId: col.id };
@@ -220,8 +267,7 @@ function onColumnHeaderContextMenu(col, event) {
 
 function insertRowAction(r, below) {
     const newItems = JSON.parse(JSON.stringify(props.block.items ?? []));
-    newItems.splice(below ? parseInt(r) + 1 : parseInt(r), 0, { no: 1, description: "New Item", qty: 1, unit_price: 0, discount: 0, tax: 0, total: 0 });
-    newItems.forEach((item, i) => item.no = i + 1);
+    newItems.splice(below ? parseInt(r) + 1 : parseInt(r), 0, { no: "", description: "", qty: "", unit_price: "", discount: "", tax: "", total: "" });
     blockStore.updateBlock(props.block.id, { items: newItems });
     commitHistory(); closeContextMenu();
 }
@@ -231,7 +277,6 @@ function deleteRowAction(r) {
     const newItems = JSON.parse(JSON.stringify(props.block.items ?? []));
     if (idx < newItems.length) {
         newItems.splice(idx, 1);
-        newItems.forEach((item, i) => item.no = i + 1);
         blockStore.updateBlock(props.block.id, { items: newItems });
     } else {
         const currentEmpty = props.block.emptyRows ?? 0;
@@ -257,7 +302,6 @@ function deleteSelectedRowsAction() {
             emptyRowsToDelete++;
         }
     });
-    newItems.forEach((item, i) => item.no = i + 1);
     const updates = { items: newItems, selectedCells: [] };
     if (emptyRowsToDelete > 0) {
         const currentEmpty = props.block.emptyRows ?? 0;
@@ -302,8 +346,22 @@ function clearSelectedCellsAction() {
 }
 
 function handleGlobalKeyDown(event) {
-    if (!isBlockSelected.value || (props.block.selectedCells ?? []).length === 0) return;
-    if (['input', 'textarea'].includes(document.activeElement?.tagName?.toLowerCase())) return;
+    if (!isBlockSelected.value) return;
+    const isEditable = document.activeElement?.contentEditable === 'true' || document.activeElement?.isContentEditable;
+    if (['input', 'textarea'].includes(document.activeElement?.tagName?.toLowerCase()) || isEditable) return;
+
+    // Ctrl+A — select all data cells in the table
+    if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+        event.preventDefault();
+        const allCells = [];
+        allRows.value.forEach(row => {
+            visibleColumns.value.forEach(col => allCells.push(`${row.index}:${col.id}`));
+        });
+        blockStore.updateBlock(props.block.id, { selectedCells: allCells });
+        return;
+    }
+
+    if ((props.block.selectedCells ?? []).length === 0) return;
     if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
         clearSelectedCellsAction();
@@ -398,6 +456,32 @@ function updateSelectedCellsAlign(dir, isVertical = false) {
     commitHistory();
 }
 
+// Update bg or text color for all selected cells
+function updateSelectedCellsColor(prop, val) {
+    const cellStyles = JSON.parse(JSON.stringify(props.block.cellStyles ?? {}));
+    const selected = props.block.selectedCells ?? [];
+    const target = selected.length > 0 ? selected : (contextMenu.value.r !== null ? [`${contextMenu.value.r}:${contextMenu.value.colId}`] : []);
+    target.forEach(k => {
+        if (!cellStyles[k]) cellStyles[k] = {};
+        cellStyles[k][prop] = val;
+    });
+    blockStore.updateBlock(props.block.id, { cellStyles });
+    commitHistory();
+}
+
+// Update bg or text color for ALL cells in a column
+function updateColumnCellsColor(colId, prop, val) {
+    const cellStyles = JSON.parse(JSON.stringify(props.block.cellStyles ?? {}));
+    const rowCount = (props.block.items ?? []).length + (props.block.emptyRows ?? 0);
+    for (let r = 0; r < rowCount; r++) {
+        const k = `${r}:${colId}`;
+        if (!cellStyles[k]) cellStyles[k] = {};
+        cellStyles[k][prop] = val;
+    }
+    blockStore.updateBlock(props.block.id, { cellStyles });
+    commitHistory();
+}
+
 function updateColumnAlignmentAction(colId, prop, val) {
     const columns = JSON.parse(JSON.stringify(props.block.columns || []));
     const col = columns.find(c => c.id === colId);
@@ -434,12 +518,25 @@ function selectRange(startCell, endCell) {
 }
 
 function onCellMouseDown(r, colId, event) {
+    if (previewStore.isPreviewMode) return;
     if (!isBlockSelected.value) { blockStore.selectBlock(props.block.id); }
     if (canvasStore.editingBlockId !== props.block.id) {
         canvasStore.editingBlockId = props.block.id;
     }
     event.stopPropagation();
     const cellId = `${r}:${colId}`;
+
+    // Right-click (button === 2): just ensure cell is selected for context menu;
+    // don't start drag-select and don't show the edit input.
+    if (event.button === 2) {
+        const already = (props.block.selectedCells ?? []).includes(cellId);
+        if (!already) {
+            blockStore.updateBlock(props.block.id, { selectedCells: [cellId] });
+            lastSelectedCell.value = { r, colId };
+        }
+        return;
+    }
+
     if (event.shiftKey && lastSelectedCell.value) { selectionStart.value = lastSelectedCell.value; selectionEnd.value = { r, colId }; selectRange(selectionStart.value, selectionEnd.value); }
     else {
         isSelecting.value = true; selectionStart.value = { r, colId }; selectionEnd.value = { r, colId }; lastSelectedCell.value = { r, colId };
@@ -451,6 +548,7 @@ function onCellMouseDown(r, colId, event) {
 }
 
 function startEditingCellAction(r, colId) {
+    if (previewStore.isPreviewMode) return;
     if (!isBlockSelected.value) { blockStore.selectBlock(props.block.id); }
     if (canvasStore.editingBlockId !== props.block.id) {
         canvasStore.editingBlockId = props.block.id;
@@ -467,7 +565,7 @@ function startEditingCellAction(r, colId) {
     closeContextMenu();
 }
 
-function onCellMouseEnter(r, colId) { if (isSelecting.value && selectionStart.value) { selectionEnd.value = { r, colId }; selectRange(selectionStart.value, selectionEnd.value); } }
+function onCellMouseEnter(r, colId) { if (previewStore.isPreviewMode) return; if (isSelecting.value && selectionStart.value) { selectionEnd.value = { r, colId }; selectRange(selectionStart.value, selectionEnd.value); } }
 
 function onMouseUpGlobal() { isSelecting.value = false; selectionStart.value = null; selectionEnd.value = null; window.removeEventListener('mouseup', onMouseUpGlobal); commitHistory(); }
 
@@ -556,7 +654,7 @@ function addRowInline() {
     blockStore.updateBlock(props.block.id, { items }); commitHistory();
 }
 
-function commitHistory() { historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks))); }
+function commitHistory() { setTimeout(() => historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks))), 0); }
 
 watch(editingHeaderColId, (newId) => { if (newId) nextTick(() => document.querySelector(`.header-cell-${newId} input`)?.focus()); });
 watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.querySelector(`.special-row-${newId} input, .special-row-${newId} textarea`)?.focus()); });
@@ -567,7 +665,7 @@ watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.query
         <table :style="tableStyle">
             <thead v-if="block.showHeader !== false">
                 <tr>
-                    <th v-for="col in visibleColumns" :key="col.id" :class="'header-cell-' + col.id" :style="{
+                    <th v-for="col in visibleColumns" :key="col.id" :class="`col-${col.id}`" :title="!previewStore.isPreviewMode && col.binding ? getTooltipText(col.binding) : undefined" :style="{
                         background: block.headerBg ?? '#f5f5f5', color: block.headerColor ?? '#333', fontWeight: block.headerFontWeight ?? 'bold',
                         fontFamily: block.headerFontFamily ?? 'inherit',
                         padding: cellPaddingStyle ?? '6px 8px', textAlign: block.headerHAlign ?? align(col), verticalAlign: block.headerVAlign ?? 'middle',
@@ -592,13 +690,11 @@ watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.query
                             ...(getCellCustomStyles(row.index, col).borderBottom ? { borderBottom: getCellCustomStyles(row.index, col).borderBottom } : {})
                         }" @mousedown="onCellMouseDown(row.index, col.id, $event)" @mouseenter="onCellMouseEnter(row.index, col.id)" @contextmenu="onCellContextMenu(row.index, col.id, $event)">
                             <template v-if="row.isDataRow">
-                                <template v-if="col.id === 'no'">
-                                    <div class="serial-cell" @contextmenu="onRowNumberContextMenu(row.index, $event)">
-                                        <input v-if="fillMode && editingCell?.r === row.index && editingCell?.colId === col.id" :value="row.item[col.id]" class="inline-cell-input" @input="updateItemValue(row.localIndex, col.id, $event.target.value)" @blur="editingCell = null; commitHistory()" @keydown="handleKeyDown" />
-                                        <span v-else class="serial-num">{{ row.item[col.id] }}</span>
-                                        <button v-if="fillMode" class="inline-delete-row-btn" @click="deleteRowAction(row.localIndex)">&times;</button>
-                                    </div>
-                                </template>
+                                <div v-if="col.id === 'no'" class="serial-cell">
+                                    <input v-if="fillMode && editingCell?.r === row.index && editingCell?.colId === col.id" :value="row.item[col.id]" class="inline-cell-input" @input="updateItemValue(row.localIndex, col.id, $event.target.value)" @blur="editingCell = null; commitHistory()" @keydown="handleKeyDown" />
+                                    <span v-else>{{ row.item[col.id] }}</span>
+                                    <button v-if="fillMode" class="inline-delete-row-btn" @click="deleteRowAction(row.localIndex)">&#x00D7;</button>
+                                </div>
                                 <template v-else>
                                     <input v-if="fillMode && editingCell?.r === row.index && editingCell?.colId === col.id" :value="row.item[col.id]" class="inline-cell-input" @input="updateItemValue(row.localIndex, col.id, $event.target.value)" @blur="editingCell = null; commitHistory()" @keydown="handleKeyDown" />
                                     <span v-else>{{ formatVal(col, row.item) }}</span>
@@ -635,8 +731,8 @@ watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.query
     <Teleport to="body">
         <div v-if="contextMenu.visible" class="table-context-menu" :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }" @click.stop>
             <template v-if="contextMenu.type === 'cell'">
-                <div v-if="contextMenu.colId !== 'no' && contextMenu.colId !== 'total'" class="menu-item" @click="startEditingCellAction(contextMenu.r, contextMenu.colId)">Edit Cell</div>
-                <div v-if="contextMenu.colId !== 'no' && contextMenu.colId !== 'total'" class="menu-divider"></div>
+                <div class="menu-item" @click="startEditingCellAction(contextMenu.r, contextMenu.colId)">Edit Cell</div>
+                <div class="menu-divider"></div>
                 <div class="menu-submenu-parent">
                     <div class="menu-item">Row Actions</div>
                     <div class="menu-submenu">
@@ -676,6 +772,21 @@ watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.query
                         <div class="menu-item" @click="updateSelectedCellsAlign('bottom', true); closeContextMenu()">Align Bottom</div>
                     </div>
                 </div>
+                <div class="menu-submenu-parent">
+                    <div class="menu-item">&#127912; Colors</div>
+                    <div class="menu-submenu color-submenu">
+                        <div class="color-picker-row">
+                            <span class="color-label">Text</span>
+                            <input type="color" class="color-input" :value="block.cellStyles?.[(props.block.selectedCells ?? [])[0]]?.textColor ?? '#333333'" @input="updateSelectedCellsColor('textColor', $event.target.value)" @change="commitHistory()" @click.stop />
+                        </div>
+                        <div class="color-picker-row">
+                            <span class="color-label">Background</span>
+                            <input type="color" class="color-input" :value="block.cellStyles?.[(props.block.selectedCells ?? [])[0]]?.bgColor ?? '#ffffff'" @input="updateSelectedCellsColor('bgColor', $event.target.value)" @change="commitHistory()" @click.stop />
+                        </div>
+                        <div class="menu-divider"></div>
+                        <div class="menu-item" @click="updateSelectedCellsColor('bgColor', 'transparent'); closeContextMenu()">Clear Background</div>
+                    </div>
+                </div>
             </template>
             <template v-if="contextMenu.type === 'row_number'">
                 <div class="menu-submenu-parent">
@@ -696,13 +807,19 @@ watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.query
                     </div>
                 </div>
                 <div class="menu-submenu-parent">
-                    <div class="menu-item">Row Styles</div>
-                    <div class="menu-submenu">
+                    <div class="menu-item">&#127912; Colors</div>
+                    <div class="menu-submenu color-submenu">
+                        <div class="color-picker-row">
+                            <span class="color-label">Text</span>
+                            <input type="color" class="color-input" :value="block.rowStyles?.[contextMenu.r]?.textColor ?? '#333333'" @input="updateRowStyleAction(contextMenu.r, 'textColor', $event.target.value)" @change="commitHistory()" @click.stop />
+                        </div>
+                        <div class="color-picker-row">
+                            <span class="color-label">Background</span>
+                            <input type="color" class="color-input" :value="block.rowStyles?.[contextMenu.r]?.bgColor ?? '#ffffff'" @input="updateRowStyleAction(contextMenu.r, 'bgColor', $event.target.value)" @change="commitHistory()" @click.stop />
+                        </div>
+                        <div class="menu-divider"></div>
                         <div class="menu-item" @click="updateRowStyleAction(contextMenu.r, 'bold', !block.rowStyles?.[contextMenu.r]?.bold); closeContextMenu()">Toggle Bold</div>
-                        <div class="menu-item" @click="updateRowStyleAction(contextMenu.r, 'textColor', '#ff0000'); closeContextMenu()">Red Text</div>
-                        <div class="menu-item" @click="updateRowStyleAction(contextMenu.r, 'textColor', '#000000'); closeContextMenu()">Black Text</div>
-                        <div class="menu-item" @click="updateRowStyleAction(contextMenu.r, 'bgColor', '#f0f9ff'); closeContextMenu()">Light Blue Bg</div>
-                        <div class="menu-item" @click="updateRowStyleAction(contextMenu.r, 'bgColor', 'transparent'); closeContextMenu()">Clear Bg</div>
+                        <div class="menu-item" @click="updateRowStyleAction(contextMenu.r, 'bgColor', 'transparent'); closeContextMenu()">Clear Background</div>
                     </div>
                 </div>
             </template>
@@ -731,15 +848,30 @@ watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.query
                         <div class="menu-item" @click="updateColumnAlignmentAction(contextMenu.colId, 'vAlign', 'bottom'); closeContextMenu()">Align Bottom</div>
                     </div>
                 </div>
+                <div class="menu-submenu-parent">
+                    <div class="menu-item">&#127912; Colors</div>
+                    <div class="menu-submenu color-submenu">
+                        <div class="color-picker-row">
+                            <span class="color-label">Text</span>
+                            <input type="color" class="color-input" value="#333333" @input="updateColumnCellsColor(contextMenu.colId, 'textColor', $event.target.value)" @change="commitHistory()" @click.stop />
+                        </div>
+                        <div class="color-picker-row">
+                            <span class="color-label">Background</span>
+                            <input type="color" class="color-input" value="#ffffff" @input="updateColumnCellsColor(contextMenu.colId, 'bgColor', $event.target.value)" @change="commitHistory()" @click.stop />
+                        </div>
+                        <div class="menu-divider"></div>
+                        <div class="menu-item" @click="updateColumnCellsColor(contextMenu.colId, 'bgColor', 'transparent'); closeContextMenu()">Clear Background</div>
+                    </div>
+                </div>
             </template>
         </div>
     </Teleport>
 </template>
 
 <style scoped>
-/* Add this at the bottom of your style block */
-th, td {
-  background-clip: padding-box; 
+/* Ensure cell backgrounds never bleed into borders */
+:deep(th), :deep(td) {
+  background-clip: padding-box;
 }
 
 .row-resizer {
@@ -776,7 +908,7 @@ th, td {
   background: rgba(0, 180, 216, 0.3);
 }
 th, td {
-  position: relative; /* Add this to your existing th/td styles */
+  position: relative; 
 }
 .inline-cell-input { width: 100%; border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: inherit; font-family: inherit; color: inherit; text-align: inherit; border-radius: 3px; box-sizing: border-box; }
 .inline-cell-input:hover { border-color: rgba(0, 180, 216, 0.3); background: rgba(0, 180, 216, 0.05); }
@@ -796,29 +928,39 @@ th, td {
 .menu-submenu-parent:hover .menu-submenu { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
 @media print {
-  /* 1. Force the printer to perfectly copy the screen's background colors and borders */
-  * {
+  :deep(*) {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    color-adjust: exact !important;
   }
-
-  /* 2. Retain the standard collapse model used by most frameworks for complex layouts */
-  table {
+  :deep(table) {
     border-collapse: collapse !important;
     width: 100% !important;
+    table-layout: fixed !important;
   }
-
-  /* 3. Keep cell padding intact so content doesn't mash against the lines */
-  th, td {
-    background-clip: padding-box !important;
-  }
-  
-  /* 4. Prevent the rows from awkwardly snapping in half across pages */
-  tr {
-    display: table-row !important;
+  :deep(tr) {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
+
+  :deep(.col-resizer),
+  :deep(.row-resizer),
+  :deep(.inline-delete-row-btn),
+  :deep(.inline-add-row-btn),
+  :deep(.add-row-tr),
+  :deep(.table-context-menu) {
+    display: none !important;
+  }
+  :deep(td),
+  :deep(th) {
+    outline: none !important;
+    background-color: revert !important;
+  }
 }
+/* Color picker rows inside context submenus */
+.color-submenu { min-width: 170px !important; }
+.color-picker-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 14px; gap: 10px; }
+.color-label { font-size: 12px; color: #ccc; flex: 1; }
+.color-input { width: 32px; height: 24px; border: none; border-radius: 4px; padding: 0 2px; cursor: pointer; background: transparent; flex-shrink: 0; }
+.color-input::-webkit-color-swatch-wrapper { padding: 0; border-radius: 4px; }
+.color-input::-webkit-color-swatch { border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; }
 </style>

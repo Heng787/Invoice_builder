@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch, onMounted, nextTick } from "vue";
 import { useBlockStore } from "../../stores/blocks.js";
+import { usePreviewStore } from "../../stores/preview.js";
 
 const props = defineProps({
     block: { type: Object, required: true },
@@ -8,8 +9,23 @@ const props = defineProps({
 });
 
 const blockStore = useBlockStore();
+const previewStore = usePreviewStore();
 
 const displayText = computed(() => props.block.content ?? "");
+
+const isBound = computed(() => !!props.block.bindingKey);
+
+const resolvedValue = computed(() => {
+    if (!isBound.value) return displayText.value;
+    const key = props.block.bindingKey;
+    const dataVal = previewStore.previewData[key];
+    if (dataVal !== undefined && dataVal !== null && dataVal !== "") {
+        return String(dataVal);
+    }
+    return props.block.bindingFallback ?? "";
+});
+
+const getPlaceholder = (key) => key ? `{{${key}}}` : "";
 
 const style = computed(() => ({
     width: "100%",
@@ -112,7 +128,20 @@ watch(
         class="rich-text-editor"
         @input="updateContent($event.target.innerHTML)"
     />
-    <div v-else :style="style" v-html="displayText"></div>
+    <div v-else :style="style">
+        <div v-if="isBound">
+            <div class="design-binding-only">
+                <span style="color: #00b4d8; font-weight: 600;">{{ getPlaceholder(props.block.bindingKey) }}</span>
+                <div style="font-size: 10px; color: #718096; margin-top: 2px; font-weight: normal; font-style: italic; line-height: 1.2;">
+                    fallback: {{ props.block.bindingFallback || '(none)' }}
+                </div>
+            </div>
+            <div class="preview-binding-only">
+                {{ resolvedValue }}
+            </div>
+        </div>
+        <div v-else v-html="displayText"></div>
+    </div>
 </template>
 
 <style scoped>

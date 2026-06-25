@@ -1,9 +1,11 @@
-<script setup>
+﻿<script setup>
 import { computed, ref } from 'vue'
 import { useHistoryStore } from '../../../stores/history.js'
 import { useBlockStore } from '../../../stores/blocks.js'
 import { RotateCcw, RotateCw, Trash2, HelpCircle } from '@lucide/vue'
 import ConfirmModal from '../../common/ConfirmModal.vue'
+import { useTranslateUi } from '../../../utils/translateUi.js'
+const { translateUi } = useTranslateUi()
 
 const historyStore = useHistoryStore()
 const blockStore = useBlockStore()
@@ -37,9 +39,9 @@ function confirmClearAll() {
 <template>
   <div class="tab-panel">
     <div class="field-group">
-      <div class="field-label">History Management</div>
+      <div class="field-label">{{ translateUi('History Management') }}</div>
       <p style="font-size: 11px; color: var(--color-panel-muted); margin-bottom: 12px; line-height: 1.4">
-        Undo or redo recently made changes. The builder stores up to 50 edits.
+        {{ translateUi('Undo or redo recently made changes. The builder stores up to 50 edits.') }}
       </p>
 
       <!-- Quick Actions -->
@@ -51,7 +53,7 @@ function confirmClearAll() {
           @click="handleUndo"
         >
           <RotateCcw :size="13" />
-          <span>Undo ({{ undoCount > 0 ? undoCount : 0 }})</span>
+          <span>{{ translateUi('Undo') }} ({{ undoCount > 0 ? undoCount : 0 }})</span>
         </button>
         <button
           class="btn btn-panel"
@@ -60,7 +62,7 @@ function confirmClearAll() {
           @click="handleRedo"
         >
           <RotateCw :size="13" />
-          <span>Redo ({{ redoCount }})</span>
+          <span>{{ translateUi('Redo') }} ({{ redoCount }})</span>
         </button>
       </div>
 
@@ -74,7 +76,7 @@ function confirmClearAll() {
           @click="handleClearAll"
         >
           <Trash2 :size="13" />
-          <span>Clear Canvas Template</span>
+          <span>{{ translateUi('Clear Canvas Template') }}</span>
         </button>
       </div>
     </div>
@@ -94,12 +96,12 @@ function confirmClearAll() {
       >
         <HelpCircle :size="16" class="text-[var(--color-accent)]" style="flex-shrink: 0; margin-top: 1px" />
         <div style="font-size: 11px; line-height: 1.4; color: var(--color-panel-text)">
-          <strong style="display: block; margin-bottom: 2px">Keyboard Shortcuts</strong>
+          <strong style="display: block; margin-bottom: 2px">{{ translateUi('Keyboard Shortcuts') }}</strong>
           <ul style="margin: 0; padding-left: 14px">
-            <li>Undo: <code style="color: var(--color-accent)">Ctrl + Z</code></li>
-            <li>Redo: <code style="color: var(--color-accent)">Ctrl + Y</code> or <code style="color: var(--color-accent)">Ctrl + Shift + Z</code></li>
-            <li>Duplicate: <code style="color: var(--color-accent)">Ctrl + D</code></li>
-            <li>Delete: <code style="color: var(--color-accent)">Delete</code></li>
+            <li>{{ translateUi('Undo') }}: <code style="color: var(--color-accent)">Ctrl + Z</code></li>
+            <li>{{ translateUi('Redo') }}: <code style="color: var(--color-accent)">Ctrl + Y</code> or <code style="color: var(--color-accent)">Ctrl + Shift + Z</code></li>
+            <li>{{ translateUi('Duplicate Block') }}: <code style="color: var(--color-accent)">Ctrl + D</code></li>
+            <li>{{ translateUi('Delete Block') }}: <code style="color: var(--color-accent)">Delete</code></li>
           </ul>
         </div>
       </div>
@@ -108,9 +110,9 @@ function confirmClearAll() {
     <!-- Confirm Dialog -->
     <ConfirmModal
       :show="showClearConfirm"
-      title="Clear Canvas"
-      message="Are you sure you want to clear the entire canvas? This cannot be undone."
-      confirm-text="Clear All"
+      :title="translateUi('Clear Canvas')"
+      :message="translateUi('Are you sure you want to clear the entire canvas? This cannot be undone.')"
+      :confirm-text="translateUi('Clear All')"
       type="danger"
       @confirm="confirmClearAll"
       @cancel="showClearConfirm = false"

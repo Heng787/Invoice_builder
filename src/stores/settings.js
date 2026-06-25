@@ -47,10 +47,15 @@ export const useSettingsStore = defineStore('settings', () => {
   const globalFont = ref('"Noto Sans", sans-serif')
   const globalFontSize = ref(13)
 
+  const language = ref(localStorage.getItem('invoice_builder_lang') || 'en')
   const currencies = ref(CURRENCIES)
   const fonts = ref(FONTS)
   const documentTypes = ref(DOCUMENT_TYPES)
 
+  function setLanguage(lang) {
+    language.value = lang
+    localStorage.setItem('invoice_builder_lang', lang)
+  }
   function setCurrency(code) { currency.value = code }
   function setDocumentType(type) { documentType.value = type }
   function setGlobalFont(font) { globalFont.value = font }
@@ -60,9 +65,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const currentCurrency = () => CURRENCIES.find(c => c.code === currency.value) ?? CURRENCIES[0]
 
   return {
-    company, documentType, currency, globalFont, globalFontSize,
+    company, documentType, currency, globalFont, globalFontSize, language,
     currencies, fonts, documentTypes,
-    setCurrency, setDocumentType, setGlobalFont, setGlobalFontSize, setCompany,
+    setCurrency, setDocumentType, setGlobalFont, setGlobalFontSize, setCompany, setLanguage,
     currentCurrency,
   }
 })

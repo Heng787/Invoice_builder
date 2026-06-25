@@ -1,7 +1,9 @@
-<script setup>
+﻿<script setup>
 import { computed } from 'vue'
 import { useBlockStore } from '../../../stores/blocks.js'
 import { useHistoryStore } from '../../../stores/history.js'
+import { useTranslateUi } from '../../../utils/translateUi.js'
+const { translateUi } = useTranslateUi()
 
 const props = defineProps({
   block: { type: Object, required: true }
@@ -38,10 +40,9 @@ function toggleFormat(formatId) {
 <template>
   <div class="tab-panel">
     <div class="field-group">
-      <div class="field-label">Format Visibility</div>
+      <div class="field-label">{{ translateUi('Format Visibility') }}</div>
       <p style="font-size: 11px; color: var(--color-panel-muted); margin-bottom: 12px; line-height: 1.4">
-        Choose which paper formats this block should be visible on.
-        If a format is disabled, this block will be hidden when that format is active.
+        {{ translateUi('Choose which paper formats this block should be visible on. If a format is disabled, this block will be hidden when that format is active.') }}
       </p>
 
       <div style="display: flex; flex-direction: column; gap: 10px">
@@ -50,7 +51,7 @@ function toggleFormat(formatId) {
           :key="fmt.id"
           style="display: flex; align-items: center; justify-content: space-between"
         >
-          <span style="font-weight: 500">{{ fmt.label }}</span>
+          <span style="font-weight: 500">{{ translateUi(fmt.label) }}</span>
           <label class="toggle">
             <input
               type="checkbox"

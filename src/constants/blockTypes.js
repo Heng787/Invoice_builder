@@ -15,7 +15,6 @@ export const BLOCK_TYPES = Object.freeze({
   GRID: "grid",
   SECTION: "section",
   BACKGROUND_BLOCK: "background_block",
-  PAGE_BREAK: "page_break",
   PAGE_NUMBER: "page_number",
 
   // Company & Client
@@ -86,18 +85,6 @@ export const BLOCK_CATEGORIES = [
     blocks: ["text", "image", "divider", "spacer", "checkboxes_row"],
   },
   {
-    id: "layout",
-    label: "Layout",
-    icon: "Layout",
-    blocks: ["container", "table"],
-  },
-  {
-    id: "info",
-    label: "Info Blocks",
-    icon: "Building2",
-    blocks: ["company_info", "client_info", "field_row"],
-  },
-  {
     id: "document",
     label: "Document",
     icon: "FileText",
@@ -119,7 +106,7 @@ export const BLOCK_CATEGORIES = [
     id: "print",
     label: "Print",
     icon: "Printer",
-    blocks: ["cut_line", "page_break", "carbon_copy_label"],
+    blocks: ["cut_line", "carbon_copy_label"],
   },
   {
     id: "mobile",
