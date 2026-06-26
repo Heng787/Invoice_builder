@@ -102,6 +102,7 @@ const visibleTabs = computed(() => {
                 "receipt_footer",
                 "signature_line",
                 "item_table",
+                "barcode",
             ].includes(type);
         }
         if (tab.id === "data") {

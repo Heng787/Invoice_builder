@@ -345,6 +345,21 @@ export const BLOCK_DEFAULTS = {
     fontSize: 11,
     textAlign: "center",
   },
+
+  [BLOCK_TYPES.BARCODE]: {
+    ...BASE,
+    width: 200,
+    height: 80,
+    content: "123456789",
+    format: "CODE128",
+    displayValue: true,
+    barWidth: 2,
+    barHeight: 50,
+    fontSize: 12,
+    lineColor: "#000000",
+    backgroundColor: "transparent",
+    background: "transparent",
+  },
 };
 
 /**

@@ -27,6 +27,9 @@ function updateColumnBinding(colId, val) {
     }
 }
 
+import { useSettingsStore } from "../../../stores/settings.js";
+const settingsStore = useSettingsStore();
+
 function commitHistory() {
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
@@ -44,12 +47,36 @@ function getResolvedPreview(key, fallback = "") {
     }
     return fallback;
 }
+
+function updateBlockFormat(prop, val) {
+    if (!props.block.format) {
+        props.block.format = { type: 'general' };
+    }
+    if (prop === 'type') {
+        const format = {
+            type: val,
+            ...(val === 'number' ? { decimals: 2, separator: true } : {}),
+            ...(val === 'currency' ? { symbol: '$', decimals: 2, separator: true } : {}),
+            ...(val === 'accounting' ? { symbol: '$', decimals: 2 } : {}),
+            ...(val === 'percentage' ? { decimals: 2, isDecimal: false } : {}),
+            ...(val === 'date' ? { dateFormat: 'DD/MM/YYYY' } : {})
+        };
+        updateProp("format", format);
+    } else {
+        const format = {
+            ...props.block.format,
+            [prop]: val
+        };
+        updateProp("format", format);
+    }
+    commitHistory();
+}
 </script>
 
 <template>
     <div class="tab-panel">
-        <!-- 1. Text & Single Value Blocks (text, amount_in_words, receipt_header, receipt_footer) -->
-        <div v-if="['text', 'amount_in_words', 'receipt_header', 'receipt_footer'].includes(block.type)" class="field-group">
+        <!-- 1. Text & Single Value Blocks (text, amount_in_words, receipt_header, receipt_footer, barcode) -->
+        <div v-if="['text', 'amount_in_words', 'receipt_header', 'receipt_footer', 'barcode'].includes(block.type)" class="field-group">
             <div class="field-label">{{ translateUi('Variable Binding') }}</div>
             
             <div class="field-single" style="margin-bottom: 12px;">
@@ -87,6 +114,158 @@ function getResolvedPreview(key, fallback = "") {
                     <span v-else class="resolved-placeholder">
                         (No value resolved)
                     </span>
+                </div>
+            </div>
+
+            <!-- Format selector for Text blocks with binding key -->
+            <div v-if="block.type === 'text' && block.bindingKey" class="field-single" style="margin-top: 12px; border-top: 1px solid var(--color-panel-border); padding-top: 12px;">
+                <label class="sub-label">{{ translateUi('Value Format') }}</label>
+                <select
+                    :value="block.format?.type || 'general'"
+                    class="inp"
+                    style="width: 100%; padding: 4px 6px; font-size: 12px; height: 28px; margin-bottom: 8px;"
+                    @change="updateBlockFormat('type', $event.target.value)"
+                >
+                    <option value="general">General</option>
+                    <option value="number">Number</option>
+                    <option value="currency">Currency</option>
+                    <option value="accounting">Accounting</option>
+                    <option value="percentage">Percentage</option>
+                    <option value="date">Date</option>
+                    <option value="text">Text</option>
+                </select>
+
+                <!-- Sub-options depending on block.format.type -->
+                <div v-if="block.format?.type === 'number'" style="display: flex; flex-direction: column; gap: 8px; padding-left: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 11px; color: var(--color-panel-muted);">Decimal places:</span>
+                        <input
+                            type="number"
+                            :value="block.format.decimals ?? 2"
+                            min="0"
+                            max="6"
+                            class="inp"
+                            style="width: 60px; padding: 2px 4px; text-align: center; height: 22px;"
+                            @input="updateBlockFormat('decimals', parseInt($event.target.value))"
+                        />
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 11px; color: var(--color-panel-muted);">1000 Separator:</span>
+                        <label class="toggle" style="scale: 0.9;">
+                            <input
+                                type="checkbox"
+                                :checked="block.format.separator ?? true"
+                                @change="updateBlockFormat('separator', $event.target.checked)"
+                            />
+                            <span class="toggle-track" />
+                        </label>
+                    </div>
+                </div>
+
+                <div v-else-if="block.format?.type === 'currency'" style="display: flex; flex-direction: column; gap: 8px; padding-left: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 11px; color: var(--color-panel-muted);">Symbol:</span>
+                        <select
+                            :value="block.format.symbol || '$'"
+                            class="inp"
+                            style="width: 80px; padding: 2px 4px; height: 24px;"
+                            @change="updateBlockFormat('symbol', $event.target.value)"
+                        >
+                            <option v-for="c in settingsStore.currencies" :key="c.code" :value="c.symbol">{{ c.symbol }} ({{ c.code }})</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 11px; color: var(--color-panel-muted);">Decimal places:</span>
+                        <input
+                            type="number"
+                            :value="block.format.decimals ?? 2"
+                            min="0"
+                            max="6"
+                            class="inp"
+                            style="width: 60px; padding: 2px 4px; text-align: center; height: 22px;"
+                            @input="updateBlockFormat('decimals', parseInt($event.target.value))"
+                        />
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 11px; color: var(--color-panel-muted);">1000 Separator:</span>
+                        <label class="toggle" style="scale: 0.9;">
+                            <input
+                                type="checkbox"
+                                :checked="block.format.separator ?? true"
+                                @change="updateBlockFormat('separator', $event.target.checked)"
+                            />
+                            <span class="toggle-track" />
+                        </label>
+                    </div>
+                </div>
+
+                <div v-else-if="block.format?.type === 'accounting'" style="display: flex; flex-direction: column; gap: 8px; padding-left: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 11px; color: var(--color-panel-muted);">Symbol:</span>
+                        <select
+                            :value="block.format.symbol || '$'"
+                            class="inp"
+                            style="width: 80px; padding: 2px 4px; height: 24px;"
+                            @change="updateBlockFormat('symbol', $event.target.value)"
+                        >
+                            <option v-for="c in settingsStore.currencies" :key="c.code" :value="c.symbol">{{ c.symbol }} ({{ c.code }})</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 11px; color: var(--color-panel-muted);">Decimal places:</span>
+                        <input
+                            type="number"
+                            :value="block.format.decimals ?? 2"
+                            min="0"
+                            max="6"
+                            class="inp"
+                            style="width: 60px; padding: 2px 4px; text-align: center; height: 22px;"
+                            @input="updateBlockFormat('decimals', parseInt($event.target.value))"
+                        />
+                    </div>
+                </div>
+
+                <div v-else-if="block.format?.type === 'percentage'" style="display: flex; flex-direction: column; gap: 8px; padding-left: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 11px; color: var(--color-panel-muted);">Decimal places:</span>
+                        <input
+                            type="number"
+                            :value="block.format.decimals ?? 2"
+                            min="0"
+                            max="6"
+                            class="inp"
+                            style="width: 60px; padding: 2px 4px; text-align: center; height: 22px;"
+                            @input="updateBlockFormat('decimals', parseInt($event.target.value))"
+                        />
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 11px; color: var(--color-panel-muted); line-height: 1.1;">Value is decimal:</span>
+                        <label class="toggle" style="scale: 0.9;">
+                            <input
+                                type="checkbox"
+                                :checked="block.format.isDecimal ?? false"
+                                @change="updateBlockFormat('isDecimal', $event.target.checked)"
+                            />
+                            <span class="toggle-track" />
+                        </label>
+                    </div>
+                </div>
+
+                <div v-else-if="block.format?.type === 'date'" style="display: flex; flex-direction: column; gap: 8px; padding-left: 8px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 11px; color: var(--color-panel-muted);">Date format:</span>
+                        <select
+                            :value="block.format.dateFormat || 'DD/MM/YYYY'"
+                            class="inp"
+                            style="width: 120px; padding: 2px 4px; height: 24px;"
+                            @change="updateBlockFormat('dateFormat', $event.target.value)"
+                        >
+                            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                            <option value="DD-MM-YYYY">DD-MM-YYYY</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>

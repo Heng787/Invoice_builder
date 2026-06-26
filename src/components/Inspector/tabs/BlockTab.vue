@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed, ref } from "vue";
 import { useBlockStore } from "../../../stores/blocks.js";
 import { useHistoryStore } from "../../../stores/history.js";
@@ -56,6 +56,29 @@ function updateColumnProp(colIndex, prop, val) {
     const columns = JSON.parse(JSON.stringify(props.block.columns || []));
     if (columns[colIndex]) {
         columns[colIndex][prop] = val;
+        updateProp("columns", columns);
+        commitHistory();
+    }
+}
+
+function updateColumnFormat(colIndex, prop, val) {
+    const columns = JSON.parse(JSON.stringify(props.block.columns || []));
+    if (columns[colIndex]) {
+        if (!columns[colIndex].format) {
+            columns[colIndex].format = { type: 'general' };
+        }
+        if (prop === 'type') {
+            columns[colIndex].format = {
+                type: val,
+                ...(val === 'number' ? { decimals: 2, separator: true } : {}),
+                ...(val === 'currency' ? { symbol: '$', decimals: 2, separator: true } : {}),
+                ...(val === 'accounting' ? { symbol: '$', decimals: 2 } : {}),
+                ...(val === 'percentage' ? { decimals: 2, isDecimal: false } : {}),
+                ...(val === 'date' ? { dateFormat: 'DD/MM/YYYY' } : {})
+            };
+        } else {
+            columns[colIndex].format[prop] = val;
+        }
         updateProp("columns", columns);
         commitHistory();
     }
@@ -1608,6 +1631,160 @@ function moveField(fromIndex, toIndex) {
                             </div>
                         </div>
                     </div>
+
+                    <!-- Column Formatting -->
+                    <div style="display: flex; flex-direction: column; gap: 4px; padding-left: 2px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; margin-top: 4px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                            <span style="font-size: 10px; color: var(--color-panel-muted);">Format:</span>
+                            <select
+                                :value="col.format?.type || 'general'"
+                                class="inp"
+                                style="width: 100px; padding: 2px 4px; font-size: 11px; height: 22px;"
+                                @change="updateColumnFormat(index, 'type', $event.target.value)"
+                            >
+                                <option value="general">General</option>
+                                <option value="number">Number</option>
+                                <option value="currency">Currency</option>
+                                <option value="accounting">Accounting</option>
+                                <option value="percentage">Percentage</option>
+                                <option value="date">Date</option>
+                                <option value="text">Text</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Sub-options depending on selected format.type -->
+                        <div v-if="col.format?.type === 'number'" style="display: flex; flex-direction: column; gap: 4px; padding-left: 10px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 9px; color: var(--color-panel-muted);">Decimals:</span>
+                                <input
+                                    type="number"
+                                    :value="col.format.decimals ?? 2"
+                                    min="0"
+                                    max="6"
+                                    class="inp"
+                                    style="width: 50px; padding: 2px 4px; font-size: 11px; text-align: center; height: 20px;"
+                                    @input="updateColumnFormat(index, 'decimals', parseInt($event.target.value))"
+                                />
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 9px; color: var(--color-panel-muted);">1000 Separator:</span>
+                                <label class="toggle" style="scale: 0.85;">
+                                    <input
+                                        type="checkbox"
+                                        :checked="col.format.separator ?? true"
+                                        @change="updateColumnFormat(index, 'separator', $event.target.checked)"
+                                    />
+                                    <span class="toggle-track" />
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div v-else-if="col.format?.type === 'currency'" style="display: flex; flex-direction: column; gap: 4px; padding-left: 10px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 9px; color: var(--color-panel-muted);">Symbol:</span>
+                                <select
+                                    :value="col.format.symbol || '$'"
+                                    class="inp"
+                                    style="width: 70px; padding: 2px 4px; font-size: 11px; height: 20px;"
+                                    @change="updateColumnFormat(index, 'symbol', $event.target.value)"
+                                >
+                                    <option v-for="c in settingsStore.currencies" :key="c.code" :value="c.symbol">{{ c.symbol }} ({{ c.code }})</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 9px; color: var(--color-panel-muted);">Decimals:</span>
+                                <input
+                                    type="number"
+                                    :value="col.format.decimals ?? 2"
+                                    min="0"
+                                    max="6"
+                                    class="inp"
+                                    style="width: 50px; padding: 2px 4px; font-size: 11px; text-align: center; height: 20px;"
+                                    @input="updateColumnFormat(index, 'decimals', parseInt($event.target.value))"
+                                />
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 9px; color: var(--color-panel-muted);">1000 Separator:</span>
+                                <label class="toggle" style="scale: 0.85;">
+                                    <input
+                                        type="checkbox"
+                                        :checked="col.format.separator ?? true"
+                                        @change="updateColumnFormat(index, 'separator', $event.target.checked)"
+                                    />
+                                    <span class="toggle-track" />
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div v-else-if="col.format?.type === 'accounting'" style="display: flex; flex-direction: column; gap: 4px; padding-left: 10px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 9px; color: var(--color-panel-muted);">Symbol:</span>
+                                <select
+                                    :value="col.format.symbol || '$'"
+                                    class="inp"
+                                    style="width: 70px; padding: 2px 4px; font-size: 11px; height: 20px;"
+                                    @change="updateColumnFormat(index, 'symbol', $event.target.value)"
+                                >
+                                    <option v-for="c in settingsStore.currencies" :key="c.code" :value="c.symbol">{{ c.symbol }} ({{ c.code }})</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 9px; color: var(--color-panel-muted);">Decimals:</span>
+                                <input
+                                    type="number"
+                                    :value="col.format.decimals ?? 2"
+                                    min="0"
+                                    max="6"
+                                    class="inp"
+                                    style="width: 50px; padding: 2px 4px; font-size: 11px; text-align: center; height: 20px;"
+                                    @input="updateColumnFormat(index, 'decimals', parseInt($event.target.value))"
+                                />
+                            </div>
+                        </div>
+                        
+                        <div v-else-if="col.format?.type === 'percentage'" style="display: flex; flex-direction: column; gap: 4px; padding-left: 10px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 9px; color: var(--color-panel-muted);">Decimals:</span>
+                                <input
+                                    type="number"
+                                    :value="col.format.decimals ?? 2"
+                                    min="0"
+                                    max="6"
+                                    class="inp"
+                                    style="width: 50px; padding: 2px 4px; font-size: 11px; text-align: center; height: 20px;"
+                                    @input="updateColumnFormat(index, 'decimals', parseInt($event.target.value))"
+                                />
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 9px; color: var(--color-panel-muted); line-height: 1.1;">Value is decimal:</span>
+                                <label class="toggle" style="scale: 0.85;">
+                                    <input
+                                        type="checkbox"
+                                        :checked="col.format.isDecimal ?? false"
+                                        @change="updateColumnFormat(index, 'isDecimal', $event.target.checked)"
+                                    />
+                                    <span class="toggle-track" />
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div v-else-if="col.format?.type === 'date'" style="display: flex; flex-direction: column; gap: 4px; padding-left: 10px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                <span style="font-size: 9px; color: var(--color-panel-muted);">Format:</span>
+                                <select
+                                    :value="col.format.dateFormat || 'DD/MM/YYYY'"
+                                    class="inp"
+                                    style="width: 100px; padding: 2px 4px; font-size: 11px; height: 20px;"
+                                    @change="updateColumnFormat(index, 'dateFormat', $event.target.value)"
+                                >
+                                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                    <option value="DD-MM-YYYY">DD-MM-YYYY</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <button
@@ -2288,6 +2465,126 @@ function moveField(fromIndex, toIndex) {
                 Resize the spacer block by dragging its handles on the canvas.
                 Use the Layout tab to set exact height.
             </p>
+        </div>
+
+        <!-- ─── BARCODE ─── -->
+        <div v-else-if="block.type === 'barcode'" class="field-group">
+            <div class="field-label">{{ translateUi('Barcode Settings') }}</div>
+            
+            <!-- Barcode Value -->
+            <div class="field-single">
+                <label class="sub-label">{{ translateUi('Barcode Value') }}</label>
+                <input
+                    type="text"
+                    :value="block.content || ''"
+                    class="inp"
+                    placeholder="123456789"
+                    :disabled="block.locked"
+                    @input="updateProp('content', $event.target.value)"
+                    @blur="commitHistory"
+                />
+            </div>
+
+            <!-- Barcode Format -->
+            <div class="field-single" style="margin-top: 8px">
+                <label class="sub-label">{{ translateUi('Format') }}</label>
+                <select
+                    :value="block.format || 'CODE128'"
+                    class="inp"
+                    :disabled="block.locked"
+                    @change="handleInput('format', $event, false)"
+                    @blur="commitHistory"
+                >
+                    <option value="CODE128">CODE128</option>
+                    <option value="EAN13">EAN13</option>
+                    <option value="CODE39">CODE39</option>
+                </select>
+            </div>
+
+            <!-- Show Text (displayValue) Toggle -->
+            <div class="field-single" style="margin-top: 8px">
+                <label class="checkbox-container">
+                    <input
+                        type="checkbox"
+                        :checked="block.displayValue !== false"
+                        :disabled="block.locked"
+                        @change="handleCheckbox('displayValue', $event)"
+                    />
+                    <span class="sub-label" style="margin-left: 6px; user-select: none;">
+                        {{ translateUi('Show Text') }}
+                    </span>
+                </label>
+            </div>
+
+            <div class="field-row" style="margin-top: 8px">
+                <!-- Bar Width -->
+                <div>
+                    <label class="sub-label">{{ translateUi('Bar Width') }}</label>
+                    <input
+                        type="number"
+                        :value="block.barWidth ?? 2"
+                        class="inp"
+                        min="1"
+                        max="10"
+                        :disabled="block.locked"
+                        @input="handleInput('barWidth', $event)"
+                        @blur="commitHistory"
+                    />
+                </div>
+                <!-- Bar Height -->
+                <div>
+                    <label class="sub-label">{{ translateUi('Bar Height') }}</label>
+                    <input
+                        type="number"
+                        :value="block.barHeight ?? 50"
+                        class="inp"
+                        min="10"
+                        max="200"
+                        :disabled="block.locked"
+                        @input="handleInput('barHeight', $event)"
+                        @blur="commitHistory"
+                    />
+                </div>
+            </div>
+
+            <!-- Font Size -->
+            <div class="field-single" style="margin-top: 8px">
+                <label class="sub-label">{{ translateUi('Font Size') }}</label>
+                <input
+                    type="number"
+                    :value="block.fontSize ?? 12"
+                    class="inp"
+                    min="8"
+                    max="36"
+                    :disabled="block.locked"
+                    @input="handleInput('fontSize', $event)"
+                    @blur="commitHistory"
+                />
+            </div>
+
+            <!-- Line Color -->
+            <div class="field-single" style="margin-top: 8px">
+                <label class="sub-label">{{ translateUi('Line Color') }}</label>
+                <div style="display: flex; gap: 8px; align-items: center">
+                    <input
+                        type="color"
+                        :value="block.lineColor && block.lineColor.startsWith('#') ? block.lineColor : '#000000'"
+                        class="color-picker-input"
+                        :disabled="block.locked"
+                        @input="updateProp('lineColor', $event.target.value)"
+                        @change="commitHistory"
+                    />
+                    <input
+                        type="text"
+                        :value="block.lineColor || '#000000'"
+                        class="inp"
+                        placeholder="#000000"
+                        :disabled="block.locked"
+                        @input="updateProp('lineColor', $event.target.value)"
+                        @blur="commitHistory"
+                    />
+                </div>
+            </div>
         </div>
 
     </div>

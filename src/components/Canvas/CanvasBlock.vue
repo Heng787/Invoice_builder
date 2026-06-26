@@ -35,6 +35,7 @@ import CutLineBlockRenderer from "../blocks/CutLineBlockRenderer.vue";
 import CarbonCopyLabelBlockRenderer from "../blocks/CarbonCopyLabelBlockRenderer.vue";
 import ReceiptHeaderBlockRenderer from "../blocks/ReceiptHeaderBlockRenderer.vue";
 import ReceiptFooterBlockRenderer from "../blocks/ReceiptFooterBlockRenderer.vue";
+import BarcodeBlockRenderer from "../blocks/BarcodeBlockRenderer.vue";
 
 const RENDERERS = {
     text: TextBlockRenderer,
@@ -74,6 +75,7 @@ const RENDERERS = {
     carbon_copy_label: CarbonCopyLabelBlockRenderer,
     receipt_header: ReceiptHeaderBlockRenderer,
     receipt_footer: ReceiptFooterBlockRenderer,
+    barcode: BarcodeBlockRenderer,
     // Existing types mapped to appropriate renderers
     page_number: TextBlockRenderer,
     amount_in_words: TextBlockRenderer,

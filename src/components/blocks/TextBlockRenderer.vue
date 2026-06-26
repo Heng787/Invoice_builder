@@ -2,6 +2,8 @@
 import { computed, ref, watch, onMounted, nextTick } from "vue";
 import { useBlockStore } from "../../stores/blocks.js";
 import { usePreviewStore } from "../../stores/preview.js";
+import { useSettingsStore } from "../../stores/settings.js";
+import { formatValue } from "../../utils/formatValue.js";
 
 const props = defineProps({
     block: { type: Object, required: true },
@@ -10,6 +12,7 @@ const props = defineProps({
 
 const blockStore = useBlockStore();
 const previewStore = usePreviewStore();
+const settingsStore = useSettingsStore();
 
 const displayText = computed(() => props.block.content ?? "");
 
@@ -24,6 +27,62 @@ const resolvedValue = computed(() => {
     }
     return props.block.bindingFallback ?? "";
 });
+
+const formattedValue = computed(() => {
+    const val = resolvedValue.value;
+    const fmt = props.block.format;
+    if (!fmt || fmt.type === 'general') return val;
+    
+    const resolvedFmt = {
+        ...fmt,
+        symbol: fmt.symbol || settingsStore.globalFormat.currencySymbol
+    };
+    return formatValue(val, resolvedFmt);
+});
+
+const formatHintText = computed(() => {
+    const fmt = props.block.format;
+    if (!fmt || fmt.type === 'general') return '';
+    
+    const typeCapitalized = fmt.type.charAt(0).toUpperCase() + fmt.type.slice(1);
+    if (fmt.type === 'currency' || fmt.type === 'accounting') {
+        const sym = fmt.symbol || settingsStore.globalFormat.currencySymbol || '$';
+        return `${typeCapitalized} (${sym})`;
+    }
+    if (fmt.type === 'percentage') {
+        const mode = fmt.isDecimal ? 'Decimal' : 'Percent';
+        return `${typeCapitalized} (${mode})`;
+    }
+    if (fmt.type === 'number') {
+        return `${typeCapitalized} (${fmt.decimals ?? 2} dec)`;
+    }
+    if (fmt.type === 'date') {
+        return `${typeCapitalized} (${fmt.dateFormat || 'DD/MM/YYYY'})`;
+    }
+    return typeCapitalized;
+});
+
+function formatAccountingParts(value, format, fallbackSymbol = '$') {
+  const num = parseFloat(value)
+  if (isNaN(num)) return { left: '', right: String(value) }
+  
+  const symbol = format.symbol || fallbackSymbol
+  const decimals = format.decimals ?? 2
+  
+  if (num < 0) {
+    const abs = Math.abs(num).toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    })
+    return { left: `(${symbol}`, right: `${abs})` }
+  }
+  
+  const pos = num.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  })
+  return { left: symbol, right: pos }
+}
 
 const getPlaceholder = (key) => key ? `{{${key}}}` : "";
 
@@ -132,12 +191,21 @@ watch(
         <div v-if="isBound">
             <div class="design-binding-only">
                 <span style="color: #00b4d8; font-weight: 600;">{{ getPlaceholder(props.block.bindingKey) }}</span>
+                <div v-if="formatHintText" style="font-size: 10px; color: #4a5568; margin-top: 2px; font-weight: 600;">
+                    Format: {{ formatHintText }}
+                </div>
                 <div style="font-size: 10px; color: #718096; margin-top: 2px; font-weight: normal; font-style: italic; line-height: 1.2;">
                     fallback: {{ props.block.bindingFallback || '(none)' }}
                 </div>
             </div>
-            <div class="preview-binding-only">
-                {{ resolvedValue }}
+            <div class="preview-binding-only" style="width: 100%;">
+                <div v-if="props.block.format?.type === 'accounting'" style="display: flex; justify-content: space-between; width: 100%; box-sizing: border-box;">
+                    <span>{{ formatAccountingParts(resolvedValue, props.block.format, settingsStore.globalFormat.currencySymbol).left }}</span>
+                    <span>{{ formatAccountingParts(resolvedValue, props.block.format, settingsStore.globalFormat.currencySymbol).right }}</span>
+                </div>
+                <template v-else>
+                    {{ formattedValue }}
+                </template>
             </div>
         </div>
         <div v-else v-html="displayText"></div>

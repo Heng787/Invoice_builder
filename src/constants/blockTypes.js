@@ -4,6 +4,7 @@ export const BLOCK_TYPES = Object.freeze({
   TEXT: "text",
   DYNAMIC_TEXT: "dynamic_text",
   IMAGE: "image",
+  PAYMENT_QR: "image",
   DIVIDER: "divider",
   SPACER: "spacer",
   SHAPE: "shape",

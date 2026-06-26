@@ -4,6 +4,8 @@ import { useBlockStore } from "../../stores/blocks.js";
 import { useHistoryStore } from "../../stores/history.js";
 import { useCanvasStore } from "../../stores/canvas.js";
 import { usePreviewStore } from "../../stores/preview.js";
+import { useSettingsStore } from "../../stores/settings.js";
+import { formatValue } from "../../utils/formatValue.js";
 // Column resize
 const resizingCol = ref(null)
 const resizeStartX = ref(0)
@@ -87,6 +89,7 @@ const blockStore = useBlockStore();
 const historyStore = useHistoryStore();
 const canvasStore = useCanvasStore();
 const previewStore = usePreviewStore();
+const settingsStore = useSettingsStore();
 
 const visibleColumns = computed(() =>
     (props.block.columns ?? []).filter((c) => c.visible !== false),
@@ -152,10 +155,56 @@ function vAlign(col) {
     return col.vAlign ?? "top";
 }
 
+function formatAccountingParts(value, format, fallbackSymbol = '$') {
+  const num = parseFloat(value)
+  if (isNaN(num)) return { left: '', right: String(value) }
+  
+  const symbol = format.symbol ?? fallbackSymbol
+  const decimals = format.decimals ?? 2
+  
+  if (num < 0) {
+    const abs = Math.abs(num).toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    })
+    return { left: `(${symbol}`, right: `${abs})` }
+  }
+  
+  const pos = num.toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  })
+  return { left: symbol, right: pos }
+}
+
 function formatVal(col, item) {
     const val = item[col.id];
     if (val === undefined || val === null) return "";
-    return String(val);
+
+    const fmt = col.format ?? { type: 'general' };
+
+    // Fall back to global settings if not overridden
+    if (fmt.type === 'currency' || fmt.type === 'accounting' || fmt.type === 'number' || fmt.type === 'percentage') {
+        const globalFmt = settingsStore.globalFormat;
+        const resolvedFmt = {
+            ...fmt,
+            decimals: fmt.decimals ?? globalFmt.decimals,
+            separator: fmt.separator ?? globalFmt.separator,
+            symbol: fmt.symbol ?? globalFmt.currencySymbol,
+        };
+        return formatValue(val, resolvedFmt);
+    }
+    
+    if (fmt.type === 'date') {
+        const globalFmt = settingsStore.globalFormat;
+        const resolvedFmt = {
+            ...fmt,
+            dateFormat: fmt.dateFormat ?? globalFmt.dateFormat,
+        };
+        return formatValue(val, resolvedFmt);
+    }
+
+    return formatValue(val, fmt);
 }
 
 function getCellBorderStyles(r, colId, isDataRow) {
@@ -697,7 +746,13 @@ watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.query
                                 </div>
                                 <template v-else>
                                     <input v-if="fillMode && editingCell?.r === row.index && editingCell?.colId === col.id" :value="row.item[col.id]" class="inline-cell-input" @input="updateItemValue(row.localIndex, col.id, $event.target.value)" @blur="editingCell = null; commitHistory()" @keydown="handleKeyDown" />
-                                    <span v-else>{{ formatVal(col, row.item) }}</span>
+                                    <template v-else>
+                                        <div v-if="col.format?.type === 'accounting'" style="display: flex; justify-content: space-between; width: 100%; box-sizing: border-box; padding: 0 2px;">
+                                            <span>{{ formatAccountingParts(row.item[col.id], col.format, settingsStore.globalFormat.currencySymbol).left }}</span>
+                                            <span>{{ formatAccountingParts(row.item[col.id], col.format, settingsStore.globalFormat.currencySymbol).right }}</span>
+                                        </div>
+                                        <span v-else>{{ formatVal(col, row.item) }}</span>
+                                    </template>
                                 </template>
                             </template>
                         <div class="row-resizer" @mousedown.stop="onRowResizeStart(row.index, $event)"></div></td>

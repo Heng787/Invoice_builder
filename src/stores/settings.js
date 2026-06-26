@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 const CURRENCIES = [
   { code: 'USD', symbol: '$',  name: 'US Dollar' },
@@ -52,6 +52,20 @@ export const useSettingsStore = defineStore('settings', () => {
   const fonts = ref(FONTS)
   const documentTypes = ref(DOCUMENT_TYPES)
 
+  const globalFormat = ref({
+    currencySymbol: '$',
+    decimals: 2,
+    separator: true,
+    dateFormat: 'DD/MM/YYYY'
+  })
+
+  watch(currency, (newCode) => {
+    const cur = CURRENCIES.find(c => c.code === newCode)
+    if (cur) {
+      globalFormat.value.currencySymbol = cur.symbol
+    }
+  }, { immediate: true })
+
   function setLanguage(lang) {
     language.value = lang
     localStorage.setItem('invoice_builder_lang', lang)
@@ -66,7 +80,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   return {
     company, documentType, currency, globalFont, globalFontSize, language,
-    currencies, fonts, documentTypes,
+    currencies, fonts, documentTypes, globalFormat,
     setCurrency, setDocumentType, setGlobalFont, setGlobalFontSize, setCompany, setLanguage,
     currentCurrency,
   }

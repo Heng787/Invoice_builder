@@ -1,108 +1,284 @@
 import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
+import { useBlockStore } from "./blocks.js";
+import { useCanvasStore } from "./canvas.js";
+import { useSettingsStore } from "./settings.js";
 
-const STORAGE_KEY = "invoice_builder_templates";
-const COMPONENTS_KEY = "invoice_builder_components";
+const STORAGE_KEY = "invoiceforge_templates";
 
 export const useTemplateStore = defineStore("template", () => {
-  const templates = ref(loadTemplates());
-  const components = ref(loadComponents());
-  const currentTemplateName = ref("Untitled Template");
+  const folders = ref([]);
+  const currentTemplateName = ref("");
   const currentTemplateId = ref(null);
+  const currentFolderId = ref(null);
   const isDirty = ref(false);
 
-  const templateList = computed(() =>
-    templates.value.map((t) => ({
-      id: t.id,
-      name: t.name,
-      updatedAt: t.updatedAt,
-    })),
-  );
+  // Computed templates: flattens all templates from all folders
+  const templates = computed(() => {
+    const list = [];
+    folders.value.forEach((f) => {
+      if (Array.isArray(f.templates)) {
+        f.templates.forEach((t) => {
+          list.push({
+            ...t,
+            schema: t.data || t.schema,
+            data: t.data || t.schema,
+          });
+        });
+      }
+    });
+    return list;
+  });
 
-  function loadTemplates() {
+  // Action: Read from localStorage
+  function loadFromStorage() {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
-    } catch {
-      return [];
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data) {
+        const parsed = JSON.parse(data);
+        folders.value = parsed.folders || [];
+      } else {
+        folders.value = [];
+      }
+    } catch (e) {
+      console.error("Failed to load templates from localStorage", e);
+      folders.value = [];
     }
   }
 
-  function loadComponents() {
+  // Action: Write to localStorage
+  function saveToStorage() {
     try {
-      return JSON.parse(localStorage.getItem(COMPONENTS_KEY) ?? "[]");
-    } catch {
-      return [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ folders: folders.value }));
+    } catch (e) {
+      console.error("Failed to save templates to localStorage", e);
     }
   }
 
-  function saveTemplate(name, schema) {
-    const existing = templates.value.find((t) => t.name === name);
-    let id;
-    if (existing) {
-      existing.schema = schema;
-      existing.updatedAt = new Date().toISOString();
-      id = existing.id;
+  // Action: Create folder
+  function createFolder(name) {
+    if (!name || !name.trim()) return null;
+    const newFolder = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      createdAt: new Date().toISOString().split("T")[0],
+      templates: [],
+    };
+    folders.value.push(newFolder);
+    saveToStorage();
+    return newFolder;
+  }
+
+  // Action: Rename folder
+  function renameFolder(id, name) {
+    if (!name || !name.trim()) return;
+    const folder = folders.value.find((f) => f.id === id);
+    if (folder) {
+      folder.name = name.trim();
+      saveToStorage();
+    }
+  }
+
+  // Action: Delete folder and all templates inside
+  function deleteFolder(id) {
+    folders.value = folders.value.filter((f) => f.id !== id);
+    if (currentFolderId.value === id) {
+      currentFolderId.value = null;
+      currentTemplateId.value = null;
+      currentTemplateName.value = "";
+    }
+    saveToStorage();
+  }
+
+  // Helper to generate a small thumbnail from the fabric canvas
+  function generateThumbnail() {
+    try {
+      const canvasStore = useCanvasStore();
+      const canvas = canvasStore.fabricCanvas;
+      if (canvas && typeof canvas.toDataURL === "function") {
+        return canvas.toDataURL({
+          format: "png",
+          quality: 0.4,
+          multiplier: 0.1,
+        });
+      }
+    } catch (e) {
+      console.error("Failed to generate thumbnail:", e);
+    }
+    return null;
+  }
+
+  // Action: Save or update template
+  function saveTemplate(name, folderId, canvasData) {
+    if (!name || !name.trim()) return;
+    const folder = folders.value.find((f) => f.id === folderId);
+    if (!folder) return;
+
+    const thumbnail = generateThumbnail();
+    const cleanData = JSON.parse(JSON.stringify(canvasData));
+
+    // Determine if updating an existing template
+    const tid = currentTemplateId.value || crypto.randomUUID();
+    let existingTemplate = null;
+    let oldFolder = null;
+
+    // Search for template in all folders
+    for (const f of folders.value) {
+      const t = f.templates?.find((temp) => temp.id === tid);
+      if (t) {
+        existingTemplate = t;
+        oldFolder = f;
+        break;
+      }
+    }
+
+    if (existingTemplate) {
+      existingTemplate.name = name.trim();
+      existingTemplate.data = cleanData;
+      existingTemplate.updatedAt = new Date().toISOString();
+      if (thumbnail) {
+        existingTemplate.thumbnail = thumbnail;
+      }
+
+      // If the destination folder is different, move it
+      if (oldFolder && oldFolder.id !== folderId) {
+        oldFolder.templates = oldFolder.templates.filter((t) => t.id !== tid);
+        folder.templates.push(existingTemplate);
+      }
     } else {
-      id = crypto.randomUUID();
-      templates.value.push({
-        id,
-        name,
-        schema,
+      const newTemplate = {
+        id: tid,
+        name: name.trim(),
+        thumbnail: thumbnail || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
+        data: cleanData,
+      };
+      folder.templates.push(newTemplate);
     }
-    currentTemplateId.value = id;
-    currentTemplateName.value = name;
+
+    currentTemplateId.value = tid;
+    currentTemplateName.value = name.trim();
+    currentFolderId.value = folderId;
     isDirty.value = false;
-    persistTemplates();
+    saveToStorage();
   }
 
-  function loadTemplate(id) {
-    const t = templates.value.find((t) => t.id === id) ?? null;
-    if (t) {
-      currentTemplateId.value = t.id;
-      currentTemplateName.value = t.name;
+  // Flag to temporarily disable dirty check during loading
+  let isLoading = false;
+
+  // Action: Load template onto canvas
+  function loadTemplate(templateData) {
+    isLoading = true;
+
+    const blockStore = useBlockStore();
+    const canvasStore = useCanvasStore();
+    const settingsStore = useSettingsStore();
+
+    // Data can be nested in .data property, .schema property, or top-level schema
+    const schema = templateData.data || templateData.schema || templateData;
+
+    // Load blocks and properties onto store
+    if (Array.isArray(schema.blocks)) {
+      // Re-map IDs if loading a preset (read-only, no stored id or isPreset flag)
+      const freshBlocks = schema.blocks.map((b) => ({
+        ...b,
+        id: templateData.isPreset ? crypto.randomUUID() : (b.id || crypto.randomUUID()),
+      }));
+      blockStore.setBlocks(freshBlocks);
+    } else {
+      blockStore.setBlocks([]);
     }
-    return t;
-  }
 
-  function deleteTemplate(id) {
-    templates.value = templates.value.filter((t) => t.id !== id);
-    if (currentTemplateId.value === id) {
+    if (schema.format) canvasStore.setFormat(schema.format);
+    if (schema.orientation) canvasStore.setOrientation(schema.orientation);
+
+    if (schema.settings) {
+      if (schema.settings.currency) settingsStore.setCurrency(schema.settings.currency);
+      if (schema.settings.globalFont) settingsStore.setGlobalFont(schema.settings.globalFont);
+      if (schema.settings.globalFontSize) settingsStore.setGlobalFontSize(schema.settings.globalFontSize);
+      if (schema.settings.documentType) settingsStore.setDocumentType(schema.settings.documentType);
+      if (schema.settings.company) settingsStore.setCompany(schema.settings.company);
+      if (schema.settings.globalFormat) {
+        settingsStore.globalFormat = {
+          ...settingsStore.globalFormat,
+          ...schema.settings.globalFormat
+        };
+      }
+    }
+
+    // Set template meta
+    if (templateData.isPreset) {
+      // Presets are loaded as new template
       currentTemplateId.value = null;
-      currentTemplateName.value = "Untitled Template";
+      currentTemplateName.value = templateData.name || "";
+      currentFolderId.value = null;
+    } else {
+      currentTemplateId.value = templateData.id || null;
+      currentTemplateName.value = templateData.name || "";
+      // Find the folder containing it
+      const parentFolder = folders.value.find((f) => f.templates?.some((t) => t.id === templateData.id));
+      currentFolderId.value = parentFolder ? parentFolder.id : null;
     }
-    persistTemplates();
+
+    // Allow Vue watcher queues to flush before enabling dirty checking
+    setTimeout(() => {
+      isLoading = false;
+      isDirty.value = false;
+    }, 150);
   }
 
-  function saveComponent(name, blockData) {
-    components.value.push({
-      id: crypto.randomUUID(),
-      name,
-      blockData,
-      createdAt: new Date().toISOString(),
-    });
-    persistComponents();
+  // Action: Rename template
+  function renameTemplate(folderId, templateId, name) {
+    if (!name || !name.trim()) return;
+    const folder = folders.value.find((f) => f.id === folderId);
+    if (folder) {
+      const template = folder.templates?.find((t) => t.id === templateId);
+      if (template) {
+        template.name = name.trim();
+        template.updatedAt = new Date().toISOString();
+        if (currentTemplateId.value === templateId) {
+          currentTemplateName.value = name.trim();
+        }
+        saveToStorage();
+      }
+    }
   }
 
-  function deleteComponent(id) {
-    components.value = components.value.filter((c) => c.id !== id);
-    persistComponents();
+  // Action: Delete template
+  function deleteTemplate(folderId, templateId) {
+    const folder = folders.value.find((f) => f.id === folderId);
+    if (folder) {
+      folder.templates = (folder.templates || []).filter((t) => t.id !== templateId);
+      if (currentTemplateId.value === templateId) {
+        currentTemplateId.value = null;
+        currentTemplateName.value = "";
+        currentFolderId.value = null;
+      }
+      saveToStorage();
+    }
   }
 
-  function persistTemplates() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates.value));
+  // Action: Move template between folders
+  function moveTemplate(templateId, fromFolderId, toFolderId) {
+    const fromFolder = folders.value.find((f) => f.id === fromFolderId);
+    const toFolder = folders.value.find((f) => f.id === toFolderId);
+    if (fromFolder && toFolder) {
+      const idx = fromFolder.templates?.findIndex((t) => t.id === templateId) ?? -1;
+      if (idx !== -1) {
+        const [template] = fromFolder.templates.splice(idx, 1);
+        template.updatedAt = new Date().toISOString();
+        toFolder.templates = toFolder.templates || [];
+        toFolder.templates.push(template);
+        if (currentTemplateId.value === templateId) {
+          currentFolderId.value = toFolderId;
+        }
+        saveToStorage();
+      }
+    }
   }
 
-  function persistComponents() {
-    localStorage.setItem(COMPONENTS_KEY, JSON.stringify(components.value));
-  }
-
-  function markDirty() {
-    isDirty.value = true;
-  }
-
+  // Helper actions to maintain backwards compatibility
   function exportAsJson(schema) {
     const blob = new Blob([JSON.stringify(schema, null, 2)], {
       type: "application/json",
@@ -114,7 +290,6 @@ export const useTemplateStore = defineStore("template", () => {
     a.style.display = "none";
     document.body.appendChild(a);
     a.click();
-    // Delay revoke so the browser has time to start the download
     setTimeout(() => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
@@ -137,19 +312,49 @@ export const useTemplateStore = defineStore("template", () => {
     });
   }
 
+  // Automatic dirty state tracking
+  const blockStore = useBlockStore();
+  const canvasStore = useCanvasStore();
+  const settingsStore = useSettingsStore();
+
+  watch(
+    [
+      () => blockStore.blocks,
+      () => canvasStore.formatId,
+      () => canvasStore.orientation,
+      () => settingsStore.company,
+      () => settingsStore.documentType,
+      () => settingsStore.currency,
+      () => settingsStore.globalFont,
+      () => settingsStore.globalFontSize,
+    ],
+    () => {
+      if (isLoading) return;
+      isDirty.value = true;
+    },
+    { deep: true }
+  );
+
+  // Initialize
+  loadFromStorage();
+
   return {
-    templates,
-    components,
+    folders,
     currentTemplateName,
     currentTemplateId,
+    currentFolderId,
     isDirty,
-    templateList,
+    templates,
+    loadFromStorage,
+    saveToStorage,
+    createFolder,
+    renameFolder,
+    deleteFolder,
     saveTemplate,
     loadTemplate,
+    renameTemplate,
     deleteTemplate,
-    saveComponent,
-    deleteComponent,
-    markDirty,
+    moveTemplate,
     exportAsJson,
     importFromJson,
   };
