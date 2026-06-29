@@ -160,6 +160,12 @@ export const BLOCK_DEFAULTS = {
     bodyFontSize: 12,
     emptyRows: 3,
     showEmptyRowBorders: true,
+    zebraStriping: false,
+    zebraColor: "#f9f9f9",
+    cellPadding: 4,
+    rowHeight: 0,
+    textWrap: true,
+    headerGroups: [],
     items: [],
   },
 
@@ -248,6 +254,13 @@ export const BLOCK_DEFAULTS = {
     bankName: "",
     accountNo: "",
     accountName: "",
+  },
+
+  [BLOCK_TYPES.PAGE_BREAK]: {
+    ...BASE,
+    width: 800,
+    height: 20,
+    opacity: 1
   },
 
   [BLOCK_TYPES.WATERMARK]: {

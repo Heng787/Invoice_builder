@@ -8,6 +8,7 @@ import {
 import { useBlockStore } from "../stores/blocks.js";
 import { useCanvasStore } from "../stores/canvas.js";
 import { useTemplateStore } from "../stores/template.js";
+import { usePreviewStore } from "../stores/preview.js";
 
 /**
  * Appends an anchor to the DOM, clicks it, then removes it after a frame.
@@ -28,13 +29,18 @@ function triggerDownload(href, filename) {
 async function captureCanvas(blockStore, canvasStore) {
   const paper = document.getElementById("canvas-paper");
   if (!paper) throw new Error("Canvas element not found");
+  
+  const previewStore = usePreviewStore();
 
   const selectedBackup = [...blockStore.selectedIds];
   blockStore.clearSelection();
   paper.classList.add("export-active");
 
   const backupZoom = canvasStore.zoom;
+  const backupPreview = previewStore.isPreviewMode;
+  
   canvasStore.setZoom(1);
+  previewStore.isPreviewMode = true;
 
   await nextTick();
   await new Promise((r) => requestAnimationFrame(r));
@@ -50,14 +56,16 @@ async function captureCanvas(blockStore, canvasStore) {
       width: paper.offsetWidth,
       height: paper.offsetHeight,
     });
-    return { canvas, selectedBackup, backupZoom, paper };
+    return { canvas, selectedBackup, backupZoom, backupPreview, paper };
   } catch (err) {
-    restoreCanvas({ paper, selectedBackup, backupZoom }, canvasStore, blockStore);
+    restoreCanvas({ paper, selectedBackup, backupZoom, backupPreview }, canvasStore, blockStore);
     throw err;
   }
 }
 
-function restoreCanvas({ paper, selectedBackup, backupZoom }, canvasStore, blockStore) {
+function restoreCanvas({ paper, selectedBackup, backupZoom, backupPreview }, canvasStore, blockStore) {
+  const previewStore = usePreviewStore();
+  previewStore.isPreviewMode = backupPreview;
   canvasStore.setZoom(backupZoom);
   paper.classList.remove("export-active");
   blockStore.selectBlocks(selectedBackup);

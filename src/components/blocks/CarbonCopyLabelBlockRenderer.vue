@@ -8,6 +8,7 @@ const props = defineProps({
 })
 const blockStore = useBlockStore()
 
+// Computed style from block props
 const style = computed(() => ({
   width: '100%', height: '100%',
   display: 'flex', alignItems: 'center', justifyContent: 'center',

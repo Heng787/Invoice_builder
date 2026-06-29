@@ -16,6 +16,7 @@ export const BLOCK_TYPES = Object.freeze({
   GRID: "grid",
   SECTION: "section",
   BACKGROUND_BLOCK: "background_block",
+  PAGE_BREAK: "page_break",
   PAGE_NUMBER: "page_number",
 
   // Company & Client
@@ -40,7 +41,6 @@ export const BLOCK_TYPES = Object.freeze({
   TABLE_BUILDER: "table_builder",
   TOTALS_BLOCK: "totals_block",
   CURRENCY_SUMMARY: "currency_summary",
-  AMOUNT_IN_WORDS: "amount_in_words",
 
   // Financial
   SUBTOTAL: "subtotal",
@@ -86,6 +86,12 @@ export const BLOCK_CATEGORIES = [
     blocks: ["text", "image", "divider", "spacer", "checkboxes_row"],
   },
   {
+    id: "layout",
+    label: "Layout & Print",
+    icon: "Layout",
+    blocks: ["divider", "spacer", "page_break", "watermark", "cut_line"],
+  },
+  {
     id: "document",
     label: "Document",
     icon: "FileText",
@@ -95,7 +101,7 @@ export const BLOCK_CATEGORIES = [
     id: "financial",
     label: "Financial",
     icon: "DollarSign",
-    blocks: ["item_table", "totals_block", "amount_in_words"],
+    blocks: ["item_table", "totals_block"],
   },
   {
     id: "footer",

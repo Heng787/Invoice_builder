@@ -130,11 +130,7 @@ export const BLOCK_META = {
     name: "Currency Summary",
     description: "Multi-currency breakdown",
   },
-  amount_in_words: {
-    icon: "MessageSquare",
-    name: "Amount in Words",
-    description: '"Five Dollars Only"',
-  },
+
 
   // Financial
   subtotal: {

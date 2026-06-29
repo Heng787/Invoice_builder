@@ -4,8 +4,7 @@
  */
 
 /**
- * Evaluate a formula string with a data context
- * e.g. evaluate('qty * price', { qty: 5, price: 20 }) → 100
+ * Evaluates a formula string using context variables
  */
 export function evaluate(formula, context = {}) {
   if (!formula || typeof formula !== 'string') return null
@@ -18,12 +17,13 @@ export function evaluate(formula, context = {}) {
       expression = expression.replace(new RegExp(`\\b${safeKey}\\b`, 'g'), String(value))
     }
 
-    // Evaluate the sanitized expression (only allow safe math characters)
+    // Sanitize: only allow math characters
     if (!/^[\d\s+\-*/().%,]+$/.test(expression)) {
       console.warn('[formulaEngine] Unsafe expression blocked:', expression)
       return null
     }
 
+    // Evaluate safely
     // eslint-disable-next-line no-new-func
     const result = Function(`"use strict"; return (${expression})`)()
     return typeof result === 'number' ? result : null
@@ -34,7 +34,7 @@ export function evaluate(formula, context = {}) {
 }
 
 /**
- * Calculate invoice totals from line items
+ * Calculates invoice totals from line items
  */
 export function calcTotals(items = [], taxRate = 0, discountValue = 0, discountType = 'fixed') {
   const subtotal = items.reduce((sum, item) => {
@@ -61,7 +61,7 @@ export function calcTotals(items = [], taxRate = 0, discountValue = 0, discountT
 }
 
 /**
- * Convert a number to words (English)
+ * Converts a number to English words (e.g., 123.45 → "One Hundred Twenty Three Dollars and Forty Five Cents Only")
  */
 export function numberToWords(amount, currency = 'USD') {
   const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
@@ -69,6 +69,7 @@ export function numberToWords(amount, currency = 'USD') {
     'Seventeen', 'Eighteen', 'Nineteen']
   const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
 
+  // Converts integer portion to words recursively
   function toWords(n) {
     if (n === 0) return ''
     if (n < 20) return ones[n]

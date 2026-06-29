@@ -7,6 +7,7 @@ export const useBlockStore = defineStore('blocks', () => {
   // All blocks on canvas — keyed by their fabric object id (block.id)
   const blocks = ref([])
   const selectedIds = ref([])
+  const actualHeights = ref({})
 
   const selectedBlock = computed(() =>
     selectedIds.value.length === 1
@@ -23,6 +24,10 @@ export const useBlockStore = defineStore('blocks', () => {
   )
 
   // Actions
+  function setBlockActualHeight(id, height) {
+    actualHeights.value = { ...actualHeights.value, [id]: height }
+  }
+
   function addBlock(block) {
     const zIndex = blocks.value.length
     blocks.value.push({ ...block, zIndex })
@@ -62,30 +67,45 @@ export const useBlockStore = defineStore('blocks', () => {
     selectedIds.value = []
   }
 
+  function normalizeZIndices() {
+    blocks.value.sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0))
+    blocks.value.forEach((b, i) => {
+      b.zIndex = i
+    })
+  }
+
   function bringForward(id) {
-    const block = blocks.value.find(b => b.id === id)
-    if (!block) return
-    const next = blocks.value.find(b => b.zIndex === (block.zIndex ?? 0) + 1)
-    if (next) next.zIndex = (block.zIndex ?? 0)
-    block.zIndex = (block.zIndex ?? 0) + 1
+    normalizeZIndices()
+    const index = blocks.value.findIndex(b => b.id === id)
+    if (index === -1 || index === blocks.value.length - 1) return
+    const nextBlock = blocks.value[index + 1]
+    const currentZ = blocks.value[index].zIndex
+    const nextZ = nextBlock.zIndex
+    
+    updateBlock(id, { zIndex: nextZ })
+    updateBlock(nextBlock.id, { zIndex: currentZ })
   }
 
   function sendBackward(id) {
-    const block = blocks.value.find(b => b.id === id)
-    if (!block || (block.zIndex ?? 0) <= 0) return
-    const prev = blocks.value.find(b => b.zIndex === (block.zIndex ?? 0) - 1)
-    if (prev) prev.zIndex = block.zIndex ?? 0
-    block.zIndex = (block.zIndex ?? 0) - 1
+    normalizeZIndices()
+    const index = blocks.value.findIndex(b => b.id === id)
+    if (index <= 0) return
+    const prevBlock = blocks.value[index - 1]
+    const currentZ = blocks.value[index].zIndex
+    const prevZ = prevBlock.zIndex
+
+    updateBlock(id, { zIndex: prevZ })
+    updateBlock(prevBlock.id, { zIndex: currentZ })
   }
 
   function bringToFront(id) {
-    const maxZ = Math.max(...blocks.value.map(b => b.zIndex ?? 0))
+    const maxZ = Math.max(0, ...blocks.value.map(b => b.zIndex ?? 0))
     updateBlock(id, { zIndex: maxZ + 1 })
   }
 
   function sendToBack(id) {
-    blocks.value.forEach(b => { b.zIndex = (b.zIndex ?? 0) + 1 })
-    updateBlock(id, { zIndex: 0 })
+    const minZ = Math.min(0, ...blocks.value.map(b => b.zIndex ?? 0))
+    updateBlock(id, { zIndex: minZ - 1 })
   }
 
   function duplicateBlock(id) {
@@ -110,6 +130,7 @@ export const useBlockStore = defineStore('blocks', () => {
   function setBlocks(newBlocks) {
     blocks.value = newBlocks
     selectedIds.value = []
+    normalizeZIndices()
   }
 
   function loadPreset(documentType, width, height) {
@@ -134,9 +155,11 @@ export const useBlockStore = defineStore('blocks', () => {
   return {
     blocks,
     selectedIds,
+    actualHeights,
     selectedBlock,
     selectedBlocks,
     orderedBlocks,
+    setBlockActualHeight,
     addBlock,
     removeBlock,
     removeSelected,

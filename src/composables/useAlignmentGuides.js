@@ -3,17 +3,14 @@ import { useBlockStore } from '../stores/blocks.js'
 import { useCanvasStore } from '../stores/canvas.js'
 
 /**
- * Alignment guide lines state — imported by AlignmentGuides.vue to render them
+ * Reactive alignment guide lines state
  */
 export const guideLines = ref([]) // [{ orientation: 'h'|'v', position: number }]
 
 const SNAP_THRESHOLD = 6 // px
 
 /**
- * Called during block drag to compute alignment guides
- * @param {Object} movingBlock - The block being dragged
- * @param {Array} allBlocks - All blocks on canvas
- * @param {number} zoom - Current zoom level
+ * Computes alignment guides for a moving block against all other blocks
  */
 export function computeAlignmentGuides(movingBlock, allBlocks, zoom = 1) {
   const guides = []
@@ -32,7 +29,7 @@ export function computeAlignmentGuides(movingBlock, allBlocks, zoom = 1) {
     const mCenterX = mb.x + mb.width / 2
     const mCenterY = mb.y + mb.height / 2
 
-    // Vertical guides (x positions)
+    // Check vertical alignments (left, right, center)
     const vChecks = [
       { mPos: mb.x,      bPos: block.x   },
       { mPos: mb.x,      bPos: bRight     },
@@ -48,7 +45,7 @@ export function computeAlignmentGuides(movingBlock, allBlocks, zoom = 1) {
       }
     }
 
-    // Horizontal guides (y positions)
+    // Check horizontal alignments (top, bottom, center)
     const hChecks = [
       { mPos: mb.y,      bPos: block.y   },
       { mPos: mb.y,      bPos: bBottom   },
@@ -67,6 +64,9 @@ export function computeAlignmentGuides(movingBlock, allBlocks, zoom = 1) {
 
   guideLines.value = guides
 }
+
+
+ //Clears all active alignment guides
 
 export function clearGuides() {
   guideLines.value = []

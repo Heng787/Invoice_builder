@@ -15,16 +15,20 @@ function debounce(fn, wait, { leading = false, trailing = true } = {}) {
 import { useCanvasStore } from '../../stores/canvas.js'
 import { useBlockStore } from '../../stores/blocks.js'
 import { useHistoryStore } from '../../stores/history.js'
+import { usePreviewStore } from '../../stores/preview.js'
 import { useDragAndDrop } from '../../composables/useDragAndDrop.js'
 import ZoomControls from './ZoomControls.vue'
 import AlignmentGuides from './AlignmentGuides.vue'
 import CanvasBlock from './CanvasBlock.vue'
 import ContextMenu from './ContextMenu.vue'
+import { useSmartLayout } from '../../composables/useSmartLayout.js'
 
 const canvasStore = useCanvasStore()
 const blockStore = useBlockStore()
 const historyStore = useHistoryStore()
+const previewStore = usePreviewStore()
 const { onCanvasDrop, onCanvasDragOver } = useDragAndDrop()
+const { smartPositions } = useSmartLayout()
 
 const workspaceEl = ref(null)
 const paperEl = ref(null)
@@ -297,7 +301,7 @@ onUnmounted(() => {
       >
         <div class="margin-indicator" />
         
-        <AlignmentGuides v-if="blockStore.selectedIds.length > 1" />
+        <AlignmentGuides v-if="!previewStore.isPreviewMode" />
 
         <div v-if="dragSelect.active" :style="dragSelectStyle" />
 
@@ -305,6 +309,7 @@ onUnmounted(() => {
           v-for="block in blockStore.orderedBlocks"
           :key="block.id"
           :block="block"
+          :smart-y="smartPositions[block.id]"
           @contextmenu.stop="(e) => showContextMenu(e, block.id)"
         />
       </div>

@@ -6,6 +6,7 @@ import { useCanvasStore } from "../../stores/canvas.js";
 import { usePreviewStore } from "../../stores/preview.js";
 import { useSettingsStore } from "../../stores/settings.js";
 import { formatValue } from "../../utils/formatValue.js";
+import { evaluate } from "../../utils/formulaEngine.js";
 // Column resize
 const resizingCol = ref(null)
 const resizeStartX = ref(0)
@@ -95,13 +96,69 @@ const visibleColumns = computed(() =>
     (props.block.columns ?? []).filter((c) => c.visible !== false),
 );
 
+const hasHeaderGroups = computed(() => {
+    return Array.isArray(props.block.headerGroups) && props.block.headerGroups.length > 0;
+});
+
+const topLevelHeaders = computed(() => {
+    if (!hasHeaderGroups.value) return [];
+    
+    const headers = [];
+    const groupsAdded = new Set();
+    
+    visibleColumns.value.forEach(col => {
+        // Find if this col belongs to any group
+        const group = (props.block.headerGroups || []).find(g => (g.columns || []).includes(col.id));
+        
+        if (group) {
+            if (!groupsAdded.has(group.id)) {
+                // Count how many VISIBLE columns are in this group
+                const visibleColsInGroup = visibleColumns.value.filter(c => (group.columns || []).includes(c.id));
+                if (visibleColsInGroup.length > 0) {
+                    headers.push({
+                        isGroup: true,
+                        id: group.id,
+                        label: group.label,
+                        colspan: visibleColsInGroup.length,
+                        rowspan: 1,
+                        col: visibleColsInGroup[0] // fallback for styles
+                    });
+                    groupsAdded.add(group.id);
+                }
+            }
+        } else {
+            // Not in a group
+            headers.push({
+                isGroup: false,
+                id: col.id,
+                col: col,
+                label: col.label,
+                colspan: 1,
+                rowspan: 2,
+            });
+        }
+    });
+    
+    return headers;
+});
+
+const secondLevelHeaders = computed(() => {
+    if (!hasHeaderGroups.value) return [];
+    // Only columns that belong to a group are rendered in the second row
+    return visibleColumns.value.filter(col => {
+        return (props.block.headerGroups || []).some(g => (g.columns || []).includes(col.id));
+    });
+});
+
 const previewItems = computed(() => {
     if (!previewStore.isPreviewMode) return [];
     const arraySource = props.block.arraySource;
-    if (!arraySource) return [];
+    if (!arraySource) return props.block.items ?? [];
     
     const dataArray = previewStore.previewData[arraySource];
-    if (!dataArray || !Array.isArray(dataArray)) return [];
+    if (!dataArray || !Array.isArray(dataArray)) return props.block.items ?? [];
+    
+    const staticDesignRow = (props.block.items || [])[0] || {};
     
     return dataArray.map((rowData, rowIndex) => {
         const itemObj = {};
@@ -110,7 +167,7 @@ const previewItems = computed(() => {
                 itemObj[col.id] = String(rowIndex + 1);
             } else {
                 const bindingKey = col.binding;
-                itemObj[col.id] = bindingKey ? (rowData[bindingKey] ?? "") : "";
+                itemObj[col.id] = bindingKey ? (rowData[bindingKey] ?? "") : (staticDesignRow[col.id] ?? "");
             }
         });
         return itemObj;
@@ -118,10 +175,29 @@ const previewItems = computed(() => {
 });
 
 const currentItems = computed(() => {
-    if (previewStore.isPreviewMode) {
-        return previewItems.value;
-    }
-    return props.block.items ?? [];
+    const baseItems = previewStore.isPreviewMode ? previewItems.value : (props.block.items ?? []);
+    
+    // Evaluate formulas and dynamic auto-totals for each row
+    return baseItems.map(item => {
+        const processed = { ...item };
+        
+        (props.block.columns || []).forEach(col => {
+            if (col.formula) {
+                const result = evaluate(col.formula, processed);
+                if (result !== null) processed[col.id] = result;
+            } else if (col.id === 'total' && (processed.total === "" || processed.total === undefined)) {
+                // Auto-calculate total if missing
+                const qty = parseFloat(processed.qty) || 0;
+                const price = parseFloat(processed.unit_price || processed.price) || 0;
+                const discount = parseFloat(processed.discount) || 0;
+                if (qty > 0 || price > 0) {
+                    processed[col.id] = (qty * price) - discount;
+                }
+            }
+        });
+        
+        return processed;
+    });
 });
 
 const tableStyle = computed(() => ({
@@ -252,14 +328,18 @@ function getCellBorderStyles(r, colId, isDataRow) {
 }
 
 const emptyRowsCount = computed(() => {
-    if (previewStore.isPreviewMode) {
-        if (props.block.showEmptyRowsInPreview === false) {
-            return 0;
-        }
-        const minEmpty = props.block.minEmptyRows ?? 5;
-        return Math.max(0, minEmpty - previewItems.value.length);
-    }
-    return Math.max(0, (props.block.emptyRows ?? 0) - currentItems.value.length);
+    const isPreview = previewStore.isPreviewMode;
+    const showEmpty = isPreview ? props.block.showEmptyRowsInPreview : props.block.showEmptyRows;
+    
+    if (showEmpty === false) return 0;
+    
+    const targetRows = isPreview 
+        ? (props.block.empty ?? props.block.minEmptyRows ?? 5)
+        : (props.block.emptyRows ?? 0);
+        
+    const currentLength = isPreview ? previewItems.value.length : currentItems.value.length;
+    
+    return Math.max(0, targetRows - currentLength);
 });
 
 const emptyRows = computed(() => Array(emptyRowsCount.value).fill(null));
@@ -672,14 +752,17 @@ function getCellCustomStyles(r, col) {
         color: cellStyle.textColor ?? rowStyle.textColor ?? '#333',
         fontWeight: (cellStyle.bold ?? rowStyle.bold ?? (col.id === 'total' || rowStyle.isSummary || rowStyle.isHeader)) ? 'bold' : 'normal',
         fontStyle: (cellStyle.italic ?? rowStyle.italic) ? 'italic' : 'normal',
-        height: rowStyle.height ? `${rowStyle.height}px` : undefined,
-        borderBottom: rowStyle.isSummary ? `3px double ${borderColor.value}` : undefined
+        height: rowStyle.height ? `${rowStyle.height}px` : (props.block.rowHeight ? `${props.block.rowHeight}px` : undefined),
+        borderBottom: rowStyle.isSummary ? `3px double ${borderColor.value}` : undefined,
+        whiteSpace: props.block.textWrap === false ? 'nowrap' : 'normal',
+        overflow: props.block.textWrap === false ? 'hidden' : 'visible',
+        textOverflow: props.block.textWrap === false ? 'ellipsis' : 'clip'
     };
 }
 
 const cellPaddingStyle = computed(() => props.block.cellPadding !== undefined ? `${props.block.cellPadding}px` : null);
 
-function getRowBgColor(r) { return props.block.alternatingRows ? (r % 2 === 0 ? (props.block.row1Color ?? '#ffffff') : (props.block.row2Color ?? '#fafafa')) : 'transparent'; }
+function getRowBgColor(r) { return props.block.zebraStriping ? (r % 2 === 1 ? (props.block.zebraColor ?? '#f9f9f9') : 'transparent') : (props.block.alternatingRows ? (r % 2 === 0 ? (props.block.row1Color ?? '#ffffff') : (props.block.row2Color ?? '#fafafa')) : 'transparent'); }
 
 function getSplitRowColspans(leftWidth) {
     const N = visibleColumns.value.length, left = Math.max(1, Math.min(N - 1, Math.floor(N * ((leftWidth ?? 60) / 100))));
@@ -713,19 +796,45 @@ watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.query
     <div style="width: 100%; overflow: visible">
         <table :style="tableStyle">
             <thead v-if="block.showHeader !== false">
-                <tr>
-                    <th v-for="col in visibleColumns" :key="col.id" :class="`col-${col.id}`" :title="!previewStore.isPreviewMode && col.binding ? getTooltipText(col.binding) : undefined" :style="{
-                        background: block.headerBg ?? '#f5f5f5', color: block.headerColor ?? '#333', fontWeight: block.headerFontWeight ?? 'bold',
-                        fontFamily: block.headerFontFamily ?? 'inherit',
-                        padding: cellPaddingStyle ?? '6px 8px', textAlign: block.headerHAlign ?? align(col), verticalAlign: block.headerVAlign ?? 'middle',
-                        border: cellBorder(), fontSize: `${block.headerFontSize ?? block.bodyFontSize ?? 12}px`, width: col.width ? `${col.width}%` : undefined, whiteSpace: 'nowrap'
-                    }" @contextmenu="onColumnHeaderContextMenu(col, $event)" @dblclick="editingHeaderColId = col.id">
-                        <input v-if="editingHeaderColId === col.id" :value="col.label" class="inline-cell-input header-edit-input" :style="{ color: block.headerColor ?? '#333', background: 'white', fontWeight: block.headerFontWeight ?? 'bold' }" @input="updateColumnProp(col.id, 'label', $event.target.value)" @blur="editingHeaderColId = null; commitHistory()" @keydown.enter="editingHeaderColId = null; commitHistory()" @keydown.esc="editingHeaderColId = null" />
-                        <span v-else>{{ col.label }}</span>
-                        <div class="col-resizer" @mousedown.stop="onColResizeStart(col.id, $event)"></div>
-                        
-                    </th>
-                </tr>
+                <template v-if="hasHeaderGroups">
+                    <tr>
+                        <th v-for="h in topLevelHeaders" :key="h.id" :class="`col-${h.id}`" :colspan="h.colspan" :rowspan="h.rowspan" :style="{
+                            background: block.headerBg ?? '#f5f5f5', color: block.headerColor ?? '#333', fontWeight: block.headerFontWeight ?? 'bold',
+                            fontFamily: block.headerFontFamily ?? 'inherit',
+                            padding: cellPaddingStyle ?? '6px 8px', textAlign: block.headerHAlign ?? (h.isGroup ? 'center' : align(h.col)), verticalAlign: block.headerVAlign ?? 'middle',
+                            border: cellBorder(), fontSize: `${block.headerFontSize ?? block.bodyFontSize ?? 12}px`, width: h.isGroup ? undefined : (h.col.width ? `${h.col.width}%` : undefined), whiteSpace: 'nowrap'
+                        }">
+                            <span>{{ h.label }}</span>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th v-for="col in secondLevelHeaders" :key="col.id" :class="`col-${col.id}`" :title="!previewStore.isPreviewMode && col.binding ? getTooltipText(col.binding) : undefined" :style="{
+                            background: block.headerBg ?? '#f5f5f5', color: block.headerColor ?? '#333', fontWeight: block.headerFontWeight ?? 'bold',
+                            fontFamily: block.headerFontFamily ?? 'inherit',
+                            padding: cellPaddingStyle ?? '6px 8px', textAlign: block.headerHAlign ?? align(col), verticalAlign: block.headerVAlign ?? 'middle',
+                            border: cellBorder(), fontSize: `${block.headerFontSize ?? block.bodyFontSize ?? 12}px`, width: col.width ? `${col.width}%` : undefined, whiteSpace: 'nowrap'
+                        }" @contextmenu="onColumnHeaderContextMenu(col, $event)" @dblclick="editingHeaderColId = col.id">
+                            <input v-if="editingHeaderColId === col.id" :value="col.label" class="inline-cell-input header-edit-input" :style="{ color: block.headerColor ?? '#333', background: 'white', fontWeight: block.headerFontWeight ?? 'bold' }" @input="updateColumnProp(col.id, 'label', $event.target.value)" @blur="editingHeaderColId = null; commitHistory()" @keydown.enter="editingHeaderColId = null; commitHistory()" @keydown.esc="editingHeaderColId = null" />
+                            <span v-else>{{ col.label }}</span>
+                            <div class="col-resizer" @mousedown.stop="onColResizeStart(col.id, $event)"></div>
+                        </th>
+                    </tr>
+                </template>
+                <template v-else>
+                    <tr>
+                        <th v-for="col in visibleColumns" :key="col.id" :class="`col-${col.id}`" :title="!previewStore.isPreviewMode && col.binding ? getTooltipText(col.binding) : undefined" :style="{
+                            background: block.headerBg ?? '#f5f5f5', color: block.headerColor ?? '#333', fontWeight: block.headerFontWeight ?? 'bold',
+                            fontFamily: block.headerFontFamily ?? 'inherit',
+                            padding: cellPaddingStyle ?? '6px 8px', textAlign: block.headerHAlign ?? align(col), verticalAlign: block.headerVAlign ?? 'middle',
+                            border: cellBorder(), fontSize: `${block.headerFontSize ?? block.bodyFontSize ?? 12}px`, width: col.width ? `${col.width}%` : undefined, whiteSpace: 'nowrap'
+                        }" @contextmenu="onColumnHeaderContextMenu(col, $event)" @dblclick="editingHeaderColId = col.id">
+                            <input v-if="editingHeaderColId === col.id" :value="col.label" class="inline-cell-input header-edit-input" :style="{ color: block.headerColor ?? '#333', background: 'white', fontWeight: block.headerFontWeight ?? 'bold' }" @input="updateColumnProp(col.id, 'label', $event.target.value)" @blur="editingHeaderColId = null; commitHistory()" @keydown.enter="editingHeaderColId = null; commitHistory()" @keydown.esc="editingHeaderColId = null" />
+                            <span v-else>{{ col.label }}</span>
+                            <div class="col-resizer" @mousedown.stop="onColResizeStart(col.id, $event)"></div>
+                            
+                        </th>
+                    </tr>
+                </template>
             </thead>
             <tbody>
                 <tr v-for="row in allRows" :key="row.index">
@@ -735,6 +844,7 @@ watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.query
                             textAlign: getCellAlign(row.index, col), verticalAlign: getCellVAlign(row.index, col), color: getCellCustomStyles(row.index, col).color,
                             backgroundColor: isCellSelected(row.index, col.id) ? 'rgba(0, 180, 216, 0.15)' : getCellCustomStyles(row.index, col).backgroundColor,
                             fontWeight: getCellCustomStyles(row.index, col).fontWeight, fontStyle: getCellCustomStyles(row.index, col).fontStyle, height: getCellCustomStyles(row.index, col).height,
+                            whiteSpace: getCellCustomStyles(row.index, col).whiteSpace, overflow: getCellCustomStyles(row.index, col).overflow, textOverflow: getCellCustomStyles(row.index, col).textOverflow,
                             outline: isCellSelected(row.index, col.id) ? '2px solid #00b4d8' : undefined, outlineOffset: isCellSelected(row.index, col.id) ? '-2px' : undefined, cursor: fillMode ? 'default' : 'pointer',
                             ...(getCellCustomStyles(row.index, col).borderBottom ? { borderBottom: getCellCustomStyles(row.index, col).borderBottom } : {})
                         }" @mousedown="onCellMouseDown(row.index, col.id, $event)" @mouseenter="onCellMouseEnter(row.index, col.id)" @contextmenu="onCellContextMenu(row.index, col.id, $event)">

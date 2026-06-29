@@ -25,7 +25,7 @@ import {
     AlertCircle,
     Loader,
     Printer,
-    Languages,
+
     Bold,
     Italic,
     Underline,
@@ -72,7 +72,6 @@ function handleCancelModal() {
 
 const importMenuOpen = ref(false);
 const exportMenuOpen = ref(false);
-const translateMenuOpen = ref(false);
 const formatSettingsMenuOpen = ref(false);
 const showSaveModal = ref(false);
 const saveName = ref(templateStore.currentTemplateName);
@@ -82,18 +81,15 @@ const newFolderName = ref("");
 
 const importBtnEl = ref(null);
 const exportBtnEl = ref(null);
-const translateBtnEl = ref(null);
 const formatSettingsBtnEl = ref(null);
 const importMenuPosition = ref({ top: "0px", right: "0px" });
 const exportMenuPosition = ref({ top: "0px", right: "0px" });
-const translateMenuPosition = ref({ top: "0px", right: "0px" });
 const formatSettingsMenuPosition = ref({ top: "0px", right: "0px" });
 
 function toggleImportMenu() {
     importMenuOpen.value = !importMenuOpen.value;
     if (importMenuOpen.value) {
         exportMenuOpen.value = false;
-        translateMenuOpen.value = false;
         formatSettingsMenuOpen.value = false;
         if (importBtnEl.value) {
             const rect = importBtnEl.value.getBoundingClientRect();
@@ -109,7 +105,6 @@ function toggleExportMenu() {
     exportMenuOpen.value = !exportMenuOpen.value;
     if (exportMenuOpen.value) {
         importMenuOpen.value = false;
-        translateMenuOpen.value = false;
         formatSettingsMenuOpen.value = false;
         if (exportBtnEl.value) {
             const rect = exportBtnEl.value.getBoundingClientRect();
@@ -142,7 +137,6 @@ function toggleFormatSettingsMenu() {
     if (formatSettingsMenuOpen.value) {
         importMenuOpen.value = false;
         exportMenuOpen.value = false;
-        translateMenuOpen.value = false;
         if (formatSettingsBtnEl.value) {
             const rect = formatSettingsBtnEl.value.getBoundingClientRect();
             formatSettingsMenuPosition.value = {
@@ -632,10 +626,12 @@ function parseCSVText(text) {
 async function handlePrint() {
     const backupZoom = canvasStore.zoom;
     const backupFillMode = canvasStore.fillMode;
+    const backupPreview = previewStore.isPreviewMode;
     
-    // Set zoom to 1 and disable fill mode for clean rendering
+    // Set zoom to 1, disable fill mode, and force preview mode for clean rendering
     canvasStore.setZoom(1);
     canvasStore.setFillMode(false);
+    previewStore.isPreviewMode = true;
     
     // Wait for Vue's next tick and a short timeout to let the browser compute the layout reflow
     await nextTick();
@@ -647,6 +643,7 @@ async function handlePrint() {
     setTimeout(() => {
         canvasStore.setZoom(backupZoom);
         canvasStore.setFillMode(backupFillMode);
+        previewStore.isPreviewMode = backupPreview;
     }, 500);
 }
 
@@ -755,385 +752,7 @@ function handleResetToDefault() {
     );
 }
 
-// ─── Translate to Khmer ─────────────────────────────────────
-const translationMap = {
-    'invoice': 'វិក្កយបត្រ',
-    'sale order': 'លិខិតបញ្ជាទិញ',
-    'receipt': 'បង្កាន់ដៃទទួលប្រាក់',
-    'quote': 'សម្រង់តម្លៃ',
-    'quotation': 'សម្រង់តម្លៃ',
-    'delivery note': 'ប័ណ្ណប្រគល់ទំនិញ',
-    'purchase order': 'លិខិតបញ្ជាទិញ',
-    'credit note': 'លិខិតឥណទាន',
-    
-    'invoice no': 'លេខវិក្កយបត្រ',
-    'invoice no.': 'លេខវិក្កយបត្រ',
-    'invoice number': 'លេខវិក្កយបត្រ',
-    'inv no': 'លេខវិក្កយបត្រ',
-    'order no': 'លេខលិខិតបញ្ជាទិញ',
-    'order number': 'លេខលិខិតបញ្ជាទិញ',
-    'receipt no': 'លេខបង្កាន់ដៃ',
-    'receipt number': 'លេខបង្កាន់ដៃ',
-    'quote no': 'លេខសម្រង់តម្លៃ',
-    'quotation no': 'លេខសម្រង់តម្លៃ',
-    'dn no': 'លេខប័ណ្ណប្រគល់ទំនិញ',
-    'po no': 'លេខបញ្ជាទិញ',
-    'purchase order no': 'លេខបញ្ជាទិញ',
-    'ref no': 'លេខយោង',
-    'po ref': 'លេខយោងការបញ្ជាទិញ',
-    
-    'issue date': 'កាលបរិច្ឆេទចេញផ្សាយ',
-    'date': 'កាលបរិច្ឆេទ',
-    'due date': 'កាលបរិច្ឆេទកំណត់ទូទាត់',
-    'order date': 'កាលបរិច្ឆេទបញ្ជាទិញ',
-    'valid until': 'សុពលភាពដល់',
-    'actual delivery date': 'កាលបរិច្ឆេទប្រគល់ទំនិញជាក់ស្តែង',
-    
-    'bill to': 'ជូនចំពោះ',
-    'invoice to': 'ជូនចំពោះ',
-    'client info': 'ព័ត៌មានអតិថិជន',
-    'quote for': 'សម្រង់តម្លៃជូន',
-    'seller': 'អ្នកលក់',
-    'buyer': 'អ្នកទិញ',
-    'ship from': 'ដឹកជញ្ជូនពី',
-    'ship to': 'ដឹកជញ្ជូនទៅ',
-    'from': 'ពី',
-    'to': 'ជូនចំពោះ',
-    'invoice details': 'ព័ត៌មានលម្អិតវិក្កយបត្រ',
-    
-    '#': 'ល.រ',
-    'no': 'ល.រ',
-    'no.': 'ល.រ',
-    'description': 'ពិពណ៌នាទំនិញ',
-    'item description': 'ពិពណ៌នាទំនិញ',
-    'qty': 'បរិមាណ',
-    'quantity': 'បរិមាណ',
-    'unit price': 'តម្លៃរាយ',
-    'price': 'តម្លៃ',
-    'unit': 'ឯកតា',
-    'discount': 'បញ្ចុះតម្លៃ',
-    'tax': 'អាករ',
-    'tax rate': 'អត្រាអាករ',
-    'total': 'សរុប',
-    'total due': 'ប្រាក់ត្រូវទូទាត់',
-    'amount': 'ទឹកប្រាក់',
-    'amount in words': 'ទឹកប្រាក់ជាអក្សរ',
-    
-    'subtotal': 'សរុបរង',
-    'grand total': 'សរុបរួម',
-    'balance': 'ប្រាក់នៅសល់',
-    'balance due': 'ប្រាក់ត្រូវទូទាត់',
-    'deposit': 'ប្រាក់កក់',
-    'deposit/paid': 'ប្រាក់បានបង់',
-    'paid': 'បានបង់',
-    
-    'bank details': 'ព័ត៌មានគណនីធនាគារ',
-    'scan to pay': 'ស្កែនដើម្បីទូទាត់',
-    'payment receipt qr': 'QR កូដទទួលប្រាក់',
-    'authorized signature': 'ហត្ថលេខាអនុញ្ញាត',
-    'seller representative': 'តំណាងអ្នកលក់',
-    'buyer signature': 'ហត្ថលេខាអ្នកទិញ',
-    'customer signature': 'ហត្ថលេខាអតិថិជន',
-    'received by': 'អ្នកទទួល',
-    'authorized by': 'អនុម័តដោយ',
-    
-    'cash': 'សាច់ប្រាក់',
-    'transfer': 'ផ្ទេរប្រាក់',
-    'credit': 'ឥណទាន',
-    
-    'thank you for your business!': 'សូមអរគុណចំពោះការគាំទ្ររបស់លោកអ្នក!',
-    'thank you for your payment!': 'សូមអរគុណសម្រាប់ការបង់ប្រាក់របស់លោកអ្នក!',
-    'thank you!': 'សូមអរគុណ!',
-    'delivery is expected within 7-10 working days.': 'ការដឹកជញ្ជូនរំពឹងទុកក្នុងរយៈពេល ៧ ទៅ ១០ ថ្ងៃធ្វើការ។',
-    'terms & conditions': 'លក្ខខណ្ឌផ្សេងៗ',
-    'original': 'ច្បាប់ដើម',
-    'copy 1': 'ច្បាប់ចម្លងទី ១',
-    'copy 2': 'ច្បាប់ចម្លងទី ២',
-    'stamp': 'ត្រា',
-    'cut here': 'កាត់ត្រង់នេះ',
-    'instructions': 'ការណែនាំ',
-    'remarks': 'សម្គាល់',
-    'condition': 'ស្ថានភាពទំនិញ',
-    'order notes': 'កំណត់សម្គាល់ការបញ្ជាទិញ',
-    'authorized by (signature)': 'អនុម័តដោយ (ហត្ថលេខា)',
-    'dear customer': 'ជូនចំពោះអតិថិជន',
-    
-    'this is a computer generated receipt and requires no physical signature.': 'នេះគឺជាបង្កាន់ដៃដែលបង្កើតឡើងដោយកុំព្យូទ័រ និងមិនតម្រូវឱ្យមានហត្ថលេខាឡើយ។',
-    '1. prices are subject to vat.\n2. delivery lead time: 2 weeks.\n3. validity: 14 days from date of quote.': '១. តម្លៃមិនទាន់បូករួមអាករលើតម្លៃបន្ថែម (VAT)។\n២. រយៈពេលដឹកជញ្ជូន៖ ២ សប្តាស់។\n៣. សុពលភាព៖ ១៤ ថ្ងៃគិតចាប់ពីថ្ងៃស្នើសម្រង់តម្លៃ។',
-    'dear acme corporation, we are pleased to submit our commercial quotation for the requested items detailed below.': 'ជូនចំពោះ ក្រុមហ៊ុន Acme Corporation យើងខ្ញុំរីករាយក្នុងការដាក់ជូននូវសម្រង់តម្លៃសម្រាប់ទំនិញដូចខាងក្រោម។',
-    'for queries regarding this quote, contact us at hello@mycompany.com.': 'សម្រាប់សំណួរទាក់ទងនឹងសម្រង់តម្លៃនេះ សូមទាក់ទងមកយើងខ្ញុំតាមរយៈ hello@mycompany.com។',
-    'please inspect the shipment upon arrival. notify carrier immediately of any damaged items.': 'សូមពិនិត្យមើលទំនិញនៅពេលមកដល់។ ជូនដំណឹងទៅក្រុមហ៊ុនដឹកជញ្ជូនជាបន្ទាន់ ប្រសិនបើមានទំនិញខូចខាត។',
-    'payment mode: cod\nprepared by: sales dept': 'របៀបបង់ប្រាក់៖ COD\nរៀបចំដោយ៖ ផ្នែកលក់',
-};
 
-const reverseTranslationMap = {
-    'វិក្កយបត្រ': 'INVOICE',
-    'លិខិតបញ្ជាទិញ': 'SALE ORDER',
-    'បង្កាន់ដៃទទួលប្រាក់': 'RECEIPT',
-    'សម្រង់តម្លៃ': 'QUOTATION',
-    'ប័ណ្ណប្រគល់ទំនិញ': 'DELIVERY NOTE',
-    'លិខិតឥណទាន': 'CREDIT NOTE',
-    
-    'លេខវិក្កយបត្រ': 'Invoice No',
-    'លេខលិខិតបញ្ជាទិញ': 'Order No',
-    'លេខបង្កាន់ដៃ': 'Receipt No',
-    'លេខសម្រង់តម្លៃ': 'Quote No',
-    'លេខប័ណ្ណប្រគល់ទំនិញ': 'DN No',
-    'លេខបញ្ជាទិញ': 'PO No',
-    'លេខយោង': 'Ref No',
-    'លេខយោងការបញ្ជាទិញ': 'PO Ref',
-    
-    'កាលបរិច្ឆេទចេញផ្សាយ': 'Issue Date',
-    'កាលបរិច្ឆេទ': 'Date',
-    'កាលបរិច្ឆេទកំណត់ទូទាត់': 'Due Date',
-    'កាលបរិច្ឆេទបញ្ជាទិញ': 'Order Date',
-    'សុពលភាពដល់': 'Valid Until',
-    'កាលបរិច្ឆេទប្រគល់ទំនិញជាក់ស្តែង': 'Actual Delivery Date',
-    
-    'ជូនចំពោះ': 'Bill To',
-    'ព័ត៌មានអតិថិជន': 'Client Info',
-    'សម្រង់តម្លៃជូន': 'Quote For',
-    'អ្នកលក់': 'Seller',
-    'អ្នកទិញ': 'Buyer',
-    'ដឹកជញ្ជូនពី': 'Ship From',
-    'ដឹកជញ្ជូនទៅ': 'Ship To',
-    'ពី': 'From',
-    'ព័ត៌មានលម្អិតវិក្កយបត្រ': 'Invoice Details',
-    
-    'ល.រ': 'No',
-    'ពិពណ៌នាទំនិញ': 'Description',
-    'បរិមាណ': 'Qty',
-    'តម្លៃរាយ': 'Unit Price',
-    'តម្លៃ': 'Price',
-    'ឯកតា': 'Unit',
-    'បញ្ចុះតម្លៃ': 'Discount',
-    'អាករ': 'Tax',
-    'អត្រាអាករ': 'Tax Rate',
-    'សរុប': 'Total',
-    'ប្រាក់ត្រូវទូទាត់': 'Total Due',
-    'ទឹកប្រាក់': 'Amount',
-    'ទឹកប្រាក់ជាអក្សរ': 'Amount in Words',
-    
-    'សរុបរង': 'Subtotal',
-    'សរុបរួម': 'Grand Total',
-    'ប្រាក់នៅសល់': 'Balance Due',
-    'ប្រាក់កក់': 'Deposit',
-    'ប្រាក់បានបង់': 'Paid',
-    'បានបង់': 'Paid',
-    
-    'ព័ត៌មានគណនីធនាគារ': 'Bank Details',
-    'ស្កែនដើម្បីទូទាត់': 'Scan to Pay',
-    'QR កូដទទួលប្រាក់': 'Payment Receipt QR',
-    'ហត្ថលេខាអនុញ្ញាត': 'Authorized Signature',
-    'តំណាងអ្នកលក់': 'Seller Representative',
-    'ហត្ថលេខាអ្នកទិញ': 'Buyer Signature',
-    'ហត្ថលេខាអតិថិជន': 'Customer Signature',
-    'អ្នកទទួល': 'Received By',
-    'អនុម័តដោយ': 'Authorized By',
-    
-    'សាច់ប្រាក់': 'Cash',
-    'ផ្ទេរប្រាក់': 'Transfer',
-    'ឥណទាន': 'Credit',
-    
-    'សូមអរគុណចំពោះការគាំទ្ររបស់លោកអ្នក!': 'Thank you for your business!',
-    'សូមអរគុណសម្រាប់ការបង់ប្រាក់របស់លោកអ្នក!': 'Thank you for your payment!',
-    'សូមអរគុណ!': 'Thank you!',
-    'ការដឹកជញ្ជូនរំពឹងទុកក្នុងរយៈពេល ៧ ទៅ ១០ ថ្ងៃធ្វើការ។': 'Delivery is expected within 7-10 working days.',
-    'លក្ខខណ្ឌផ្សេងៗ': 'Terms & Conditions',
-    'ច្បាប់ដើម': 'ORIGINAL',
-    'ច្បាប់ចម្លងទី ១': 'COPY 1',
-    'ច្បាប់ចម្លងទី ២': 'COPY 2',
-    'ត្រា': 'Stamp',
-    'កាត់ត្រង់នេះ': 'Cut Here',
-    'ការណែនាំ': 'Instructions',
-    'សម្គាល់': 'Remarks',
-    'ស្ថានភាពទំនិញ': 'Condition',
-    'កំណត់សម្គាល់ការបញ្ជាទិញ': 'Order Notes',
-    'អនុម័តដោយ (ហត្ថលេខា)': 'Authorized By (Signature)',
-    'ជូនចំពោះអតិថិជន': 'Dear Customer',
-    
-    'នេះគឺជាបង្កាន់ដៃដែលបង្កើតឡើងដោយកុំព្យូទ័រ និងមិនតម្រូវឱ្យមានហត្ថលេខាឡើយ។': 'This is a computer generated receipt and requires no physical signature.',
-    '១. តម្លៃមិនទាន់បូករួមអាករលើតម្លៃបន្ថែម (VAT)។\n២. រយៈពេលដឹកជញ្ជូន៖ ២ សប្តាស់។\n៣. សុពលភាព៖ ១៤ ថ្ងៃគិតចាប់ពីថ្ងៃស្នើសម្រង់តម្លៃ។': '1. Prices are subject to VAT.\n2. Delivery lead time: 2 weeks.\n3. Validity: 14 days from date of quote.',
-    'ជូនចំពោះ ក្រុមហ៊ុន Acme Corporation យើងខ្ញុំរីករាយក្នុងការដាក់ជូននូវសម្រង់តម្លៃសម្រាប់ទំនិញដូចខាងក្រោម។': 'Dear Acme Corporation, we are pleased to submit our commercial quotation for the requested items detailed below.',
-    'សម្រាប់សំណួរទាក់ទងនឹងសម្រង់តម្លៃនេះ សូមទាក់ទងមកយើងខ្ញុំតាមរយៈ hello@mycompany.com។': 'For queries regarding this quote, contact us at hello@mycompany.com.',
-    'សូមពិនិត្យមើលទំនិញនៅពេលមកដល់។ ជូនដំណឹងទៅក្រុមហ៊ុនដឹកជញ្ជូនជាបន្ទាន់ ប្រសិនបើមានទំនិញខូចខាត។': 'Please inspect the shipment upon arrival. Notify carrier immediately of any damaged items.',
-    'របៀបបង់ប្រាក់៖ COD\nរៀបចំដោយ៖ ផ្នែកលក់': 'Payment Mode: COD\nPrepared By: Sales Dept',
-};
-
-const isCurrentKhmer = computed(() => {
-    return settingsStore.language === 'kh';
-});
-
-function translateText(text, targetLang) {
-    if (typeof text !== 'string') return text;
-    const trimmed = text.trim();
-    const hasColon = trimmed.endsWith(':');
-    const cleanKey = hasColon ? trimmed.slice(0, -1).trim() : trimmed;
-    
-    if (targetLang === 'kh') {
-        const keyLower = cleanKey.toLowerCase();
-        if (translationMap[keyLower]) {
-            const translated = translationMap[keyLower];
-            return hasColon ? `${translated}:` : translated;
-        }
-    } else {
-        if (reverseTranslationMap[cleanKey]) {
-            const translated = reverseTranslationMap[cleanKey];
-            return hasColon ? `${translated}:` : translated;
-        }
-    }
-    return text;
-}
-
-function translateToKhmer() {
-    historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
-    
-    settingsStore.setLanguage('kh');
-    settingsStore.setGlobalFont('"Noto Sans Khmer", sans-serif');
-    if (settingsStore.currency === 'USD') {
-        settingsStore.setCurrency('KHR');
-    }
-    
-    const updatedBlocks = blockStore.blocks.map(block => {
-        const newBlock = { ...block };
-        
-        if ('fontFamily' in newBlock) {
-            newBlock.fontFamily = '"Noto Sans Khmer", sans-serif';
-        }
-        
-        switch (newBlock.type) {
-            case 'document_title':
-            case 'text':
-            case 'carbon_copy_label':
-            case 'watermark':
-                if (newBlock.content) {
-                    newBlock.content = translateText(newBlock.content, 'kh');
-                }
-                break;
-                
-            case 'document_header':
-                if (newBlock.title) {
-                    newBlock.title = translateText(newBlock.title, 'kh');
-                }
-                break;
-                
-            case 'field_row':
-            case 'client_info':
-            case 'bank_details':
-            case 'signature_line':
-            case 'notes':
-            case 'terms':
-            case 'stamp_box':
-                if (newBlock.label) {
-                    newBlock.label = translateText(newBlock.label, 'kh');
-                }
-                if (newBlock.content && newBlock.type !== 'dynamic_text') {
-                    newBlock.content = translateText(newBlock.content, 'kh');
-                }
-                break;
-                
-            case 'checkboxes_row':
-                if (Array.isArray(newBlock.options)) {
-                    newBlock.options = newBlock.options.map(opt => ({
-                        ...opt,
-                        label: translateText(opt.label, 'kh')
-                    }));
-                }
-                break;
-                
-            case 'item_table':
-            case 'table':
-            case 'table_builder':
-                if (Array.isArray(newBlock.columns)) {
-                    newBlock.columns = newBlock.columns.map(col => ({
-                        ...col,
-                        label: translateText(col.label, 'kh')
-                    }));
-                }
-                break;
-        }
-        
-        return newBlock;
-    });
-    
-    blockStore.setBlocks(updatedBlocks);
-    showToast("✓ Canvas translated to Khmer", "success");
-}
-
-function translateToEnglish() {
-    historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
-    
-    settingsStore.setLanguage('en');
-    settingsStore.setGlobalFont('"Noto Sans", sans-serif');
-    if (settingsStore.currency === 'KHR') {
-        settingsStore.setCurrency('USD');
-    }
-    
-    const updatedBlocks = blockStore.blocks.map(block => {
-        const newBlock = { ...block };
-        
-        if ('fontFamily' in newBlock) {
-            newBlock.fontFamily = '"Noto Sans", sans-serif';
-        }
-        
-        switch (newBlock.type) {
-            case 'document_title':
-            case 'text':
-            case 'carbon_copy_label':
-            case 'watermark':
-                if (newBlock.content) {
-                    newBlock.content = translateText(newBlock.content, 'en');
-                }
-                break;
-                
-            case 'document_header':
-                if (newBlock.title) {
-                    newBlock.title = translateText(newBlock.title, 'en');
-                }
-                break;
-                
-            case 'field_row':
-            case 'client_info':
-            case 'bank_details':
-            case 'signature_line':
-            case 'notes':
-            case 'terms':
-            case 'stamp_box':
-                if (newBlock.label) {
-                    newBlock.label = translateText(newBlock.label, 'en');
-                }
-                if (newBlock.content && newBlock.type !== 'dynamic_text') {
-                    newBlock.content = translateText(newBlock.content, 'en');
-                }
-                break;
-                
-            case 'checkboxes_row':
-                if (Array.isArray(newBlock.options)) {
-                    newBlock.options = newBlock.options.map(opt => ({
-                        ...opt,
-                        label: translateText(opt.label, 'en')
-                    }));
-                }
-                break;
-                
-            case 'item_table':
-            case 'table':
-            case 'table_builder':
-                if (Array.isArray(newBlock.columns)) {
-                    newBlock.columns = newBlock.columns.map(col => ({
-                        ...col,
-                        label: translateText(col.label, 'en')
-                    }));
-                }
-                break;
-        }
-        
-        return newBlock;
-    });
-    
-    blockStore.setBlocks(updatedBlocks);
-    showToast("✓ Canvas translated to English", "success");
-}
 
 const textColorInput = ref(null);
 const highlightColorInput = ref(null);
@@ -1477,50 +1096,7 @@ function execFormatting(command, value = null) {
 
                 <div class="topbar-sep" />
 
-                <!-- Translate Dropdown -->
-                <div class="relative" ref="translateBtnEl">
-                    <button
-                        class="btn btn-ghost"
-                        @click="toggleTranslateMenu"
-                    >
-                        <Languages :size="13" />
-                        Translate
-                        <ChevronDown :size="11" />
-                    </button>
-                    <Teleport to="body">
-                        <div
-                            v-if="translateMenuOpen"
-                            class="context-menu animate-fade-in"
-                            :style="{
-                                position: 'fixed',
-                                top: translateMenuPosition.top,
-                                right: translateMenuPosition.right,
-                                left: 'auto',
-                                minWidth: '180px',
-                                zIndex: 10000
-                            }"
-                            @mouseleave="translateMenuOpen = false"
-                        >
-                            <div class="context-menu-label">Translate Fields</div>
-                            <div 
-                                class="context-menu-item"
-                                :class="{ active: isCurrentKhmer }"
-                                @click="() => { translateToKhmer(); translateMenuOpen = false; }"
-                            >
-                                🇰🇭 Translate to Khmer
-                            </div>
-                            <div 
-                                class="context-menu-item"
-                                :class="{ active: !isCurrentKhmer }"
-                                @click="() => { translateToEnglish(); translateMenuOpen = false; }"
-                            >
-                                🇺🇸 Translate to English
-                            </div>
-                        </div>
-                    </Teleport>
-                </div>
 
-                <div class="topbar-sep" />
 
                 <!-- Import dropdown -->
                 <div class="relative" ref="importBtnEl">
@@ -1605,7 +1181,7 @@ function execFormatting(command, value = null) {
 
         <!-- Contextual Formatting Second Row (Shown only when a text block is selected) -->
         <Transition name="slide">
-            <div v-if="isTextBlockSelected" class="topbar-contextual-row flex items-center gap-2">
+            <div v-if="isTextBlockSelected" class="topbar-contextual-row print-hidden flex items-center gap-2">
                 <span class="text-[10px] text-panel-muted uppercase font-bold tracking-wider mr-2 select-none">Text Style</span>
 
                 <!-- Font Select -->

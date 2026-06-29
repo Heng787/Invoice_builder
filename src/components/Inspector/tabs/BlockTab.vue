@@ -607,6 +607,57 @@ function moveField(fromIndex, toIndex) {
     updateProp('fieldOrder', order);
     commitHistory();
 }
+
+function moveColumn(fromIndex, toIndex) {
+    const columns = JSON.parse(JSON.stringify(props.block.columns || []));
+    if (fromIndex < 0 || toIndex < 0 || fromIndex >= columns.length || toIndex >= columns.length) return;
+    
+    // Swap items
+    const temp = columns[fromIndex];
+    columns[fromIndex] = columns[toIndex];
+    columns[toIndex] = temp;
+    
+    updateProp('columns', columns);
+    commitHistory();
+}
+
+function addHeaderGroup() {
+    const groups = JSON.parse(JSON.stringify(props.block.headerGroups || []));
+    groups.push({ id: `group_${Date.now()}`, label: "New Group", columns: [] });
+    updateProp('headerGroups', groups);
+    commitHistory();
+}
+
+function updateHeaderGroupProp(index, prop, value) {
+    const groups = JSON.parse(JSON.stringify(props.block.headerGroups || []));
+    if (groups[index]) {
+        groups[index][prop] = value;
+        updateProp('headerGroups', groups);
+    }
+}
+
+function toggleHeaderGroupColumn(groupIndex, colId, checked) {
+    const groups = JSON.parse(JSON.stringify(props.block.headerGroups || []));
+    if (groups[groupIndex]) {
+        if (!groups[groupIndex].columns) groups[groupIndex].columns = [];
+        if (checked) {
+            if (!groups[groupIndex].columns.includes(colId)) {
+                groups[groupIndex].columns.push(colId);
+            }
+        } else {
+            groups[groupIndex].columns = groups[groupIndex].columns.filter(id => id !== colId);
+        }
+        updateProp('headerGroups', groups);
+        commitHistory();
+    }
+}
+
+function deleteHeaderGroup(index) {
+    const groups = JSON.parse(JSON.stringify(props.block.headerGroups || []));
+    groups.splice(index, 1);
+    updateProp('headerGroups', groups);
+    commitHistory();
+}
 </script>
 
 
@@ -1314,6 +1365,52 @@ function moveField(fromIndex, toIndex) {
                             display: block;
                             margin-bottom: 2px;
                         "
+                        >{{ translateUi('Row Height') }}</label>
+                    <div class="field-unit">
+                        <input
+                            type="number"
+                            :value="block.rowHeight ?? 0"
+                            class="inp"
+                            min="0"
+                            @input="handleInput('rowHeight', $event)"
+                            @blur="commitHistory"
+                        />
+                        <span class="field-unit-label" title="0 = Auto">{{ translateUi('px') }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="field-row" style="margin-top: 10px;">
+                <div>
+                    <label
+                        style="
+                            font-size: 10px;
+                            color: var(--color-panel-muted);
+                            display: block;
+                            margin-bottom: 2px;
+                        "
+                        >{{ translateUi('Cell Padding') }}</label>
+                    <div class="field-unit">
+                        <input
+                            type="number"
+                            :value="block.cellPadding ?? 4"
+                            class="inp"
+                            min="0"
+                            max="40"
+                            @input="handleInput('cellPadding', $event)"
+                            @blur="commitHistory"
+                        />
+                        <span class="field-unit-label">{{ translateUi('px') }}</span>
+                    </div>
+                </div>
+                <div>
+                    <label
+                        style="
+                            font-size: 10px;
+                            color: var(--color-panel-muted);
+                            display: block;
+                            margin-bottom: 2px;
+                        "
                         >{{ translateUi('Body Font Size') }}</label>
                     <div class="field-unit">
                         <input
@@ -1339,6 +1436,40 @@ function moveField(fromIndex, toIndex) {
                     margin-bottom: 12px;
                 "
             >
+                <div
+                    style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                    "
+                >
+                    <span>{{ translateUi('Show Empty Rows (Design)') }}</span>
+                    <label class="toggle">
+                        <input
+                            type="checkbox"
+                            :checked="block.showEmptyRows !== false"
+                            @change="handleCheckbox('showEmptyRows', $event)"
+                        />
+                        <span class="toggle-track" />
+                    </label>
+                </div>
+                <div
+                    style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                    "
+                >
+                    <span>{{ translateUi('Show Empty Rows (Preview)') }}</span>
+                    <label class="toggle">
+                        <input
+                            type="checkbox"
+                            :checked="block.showEmptyRowsInPreview !== false"
+                            @change="handleCheckbox('showEmptyRowsInPreview', $event)"
+                        />
+                        <span class="toggle-track" />
+                    </label>
+                </div>
                 <div
                     style="
                         display: flex;
@@ -1386,6 +1517,47 @@ function moveField(fromIndex, toIndex) {
                             type="checkbox"
                             :checked="block.showBorders !== false"
                             @change="handleCheckbox('showBorders', $event)"
+                        />
+                        <span class="toggle-track" />
+                    </label>
+                </div>
+                <div
+                    style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                    "
+                >
+                    <span>{{ translateUi('Zebra Striping') }}</span>
+                    <label class="toggle">
+                        <input
+                            type="checkbox"
+                            :checked="block.zebraStriping"
+                            @change="handleCheckbox('zebraStriping', $event)"
+                        />
+                        <span class="toggle-track" />
+                    </label>
+                </div>
+                <div v-if="block.zebraStriping" class="field-single" style="margin-top: -4px;">
+                    <label style="font-size: 10px; color: var(--color-panel-muted); margin-bottom: 4px;">{{ translateUi('Stripe Color') }}</label>
+                    <div style="display: flex; gap: 6px; align-items: center">
+                        <input type="color" :value="block.zebraColor ?? '#f9f9f9'" class="color-picker-input" @input="updateProp('zebraColor', $event.target.value)" @change="commitHistory" />
+                        <input type="text" :value="block.zebraColor ?? '#f9f9f9'" class="inp" @input="updateProp('zebraColor', $event.target.value)" @blur="commitHistory" />
+                    </div>
+                </div>
+                <div
+                    style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                    "
+                >
+                    <span>{{ translateUi('Text Wrap') }}</span>
+                    <label class="toggle">
+                        <input
+                            type="checkbox"
+                            :checked="block.textWrap !== false"
+                            @change="handleCheckbox('textWrap', $event)"
                         />
                         <span class="toggle-track" />
                     </label>
@@ -1592,14 +1764,28 @@ function moveField(fromIndex, toIndex) {
                         </div>
 
                         <!-- Delete button -->
-                        <button
-                            class="btn btn-ghost btn-icon text-danger"
-                            style="width: 22px; height: 22px; padding: 0"
-                            title="Delete Column"
-                            @click="deleteColumn(index)"
-                        >
-                            <Trash2 :size="12" />
-                        </button>
+                        <div style="display: flex; gap: 2px; align-items: center;">
+                            <button
+                                class="btn btn-ghost btn-icon"
+                                style="width: 22px; height: 22px; padding: 0"
+                                :disabled="index === 0"
+                                @click="moveColumn(index, index - 1)"
+                            >{{ translateUi('▲') }}</button>
+                            <button
+                                class="btn btn-ghost btn-icon"
+                                style="width: 22px; height: 22px; padding: 0"
+                                :disabled="index === block.columns.length - 1"
+                                @click="moveColumn(index, index + 1)"
+                            >{{ translateUi('▼') }}</button>
+                            <button
+                                class="btn btn-ghost btn-icon text-danger"
+                                style="width: 22px; height: 22px; padding: 0"
+                                title="Delete Column"
+                                @click="deleteColumn(index)"
+                            >
+                                <Trash2 :size="12" />
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Bottom row: H-align and V-align toggles -->
@@ -1792,6 +1978,57 @@ function moveField(fromIndex, toIndex) {
                     style="width: 100%; font-size: 11px; padding: 5px 0; margin-top: 4px"
                     @click="addColumn"
                 >{{ translateUi('+ Add Column') }}</button>
+            </div>
+
+            <!-- Header Groups -->
+            <div class="divider" />
+            <div class="field-label" style="margin-top: 8px">{{ translateUi('Header Groups') }}</div>
+            <div style="margin-bottom: 10px;">
+                <button
+                    class="btn btn-ghost"
+                    style="width: 100%; font-size: 11px; padding: 5px 0; margin-top: 4px"
+                    @click="addHeaderGroup"
+                >{{ translateUi('+ Add Header Group') }}</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
+                <div
+                    v-for="(group, gIdx) in (block.headerGroups || [])"
+                    :key="group.id"
+                    style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--color-panel-border); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 8px;"
+                >
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <input
+                            type="text"
+                            :value="group.label"
+                            class="inp"
+                            style="padding: 2px 4px; font-size: 11px; width: 120px;"
+                            :placeholder="translateUi('Group Label')"
+                            @input="updateHeaderGroupProp(gIdx, 'label', $event.target.value)"
+                        />
+                        <button
+                            class="btn btn-ghost text-danger"
+                            style="font-size: 10px; padding: 2px 6px;"
+                            @click="deleteHeaderGroup(gIdx)"
+                        >{{ translateUi('🗑 Delete') }}</button>
+                    </div>
+                    <div>
+                        <div style="font-size: 9px; color: var(--color-panel-muted); margin-bottom: 4px;">{{ translateUi('Columns in this group:') }}</div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; max-height: 100px; overflow-y: auto; padding-right: 4px;">
+                            <label
+                                v-for="col in block.columns"
+                                :key="col.id"
+                                style="display: flex; align-items: center; gap: 6px; font-size: 10px; cursor: pointer;"
+                            >
+                                <input
+                                    type="checkbox"
+                                    :checked="(group.columns || []).includes(col.id)"
+                                    @change="toggleHeaderGroupColumn(gIdx, col.id, $event.target.checked)"
+                                />
+                                {{ col.label || col.id }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- ROW TYPES SECTION -->

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, onMounted, onUnmounted } from "vue";
 import { useBlockStore } from "../../stores/blocks.js";
 import { useCanvasStore } from "../../stores/canvas.js";
 import { useHistoryStore } from "../../stores/history.js";
@@ -78,13 +78,13 @@ const RENDERERS = {
     barcode: BarcodeBlockRenderer,
     // Existing types mapped to appropriate renderers
     page_number: TextBlockRenderer,
-    amount_in_words: TextBlockRenderer,
     balance_due: TotalsBlockRenderer,
     deposit_paid: TotalsBlockRenderer,
 };
 
 const props = defineProps({
     block: { type: Object, required: true },
+    smartY: { type: Number, default: undefined },
 });
 
 const blockStore = useBlockStore();
@@ -127,12 +127,14 @@ const rotateStart = ref({ angle: 0, blockRotation: 0 });
 const blockStyle = computed(() => {
     const b = props.block;
     const z = canvasStore.zoom;
+    const isTable = b.type === 'item_table' || b.type === 'table' || b.type === 'table_builder';
     return {
         position: "absolute",
         left: `${b.x * z}px`,
-        top: `${b.y * z}px`,
+        top: `${(props.smartY !== undefined ? props.smartY : b.y) * z}px`,
         width: `${b.width * z}px`,
-        height: `${b.height * z}px`,
+        height: isTable ? 'auto' : `${b.height * z}px`,
+        minHeight: isTable ? `${b.height * z}px` : undefined,
         transform: `rotate(${b.rotation ?? 0}deg)`,
         opacity: b.opacity ?? 1,
         zIndex: b.zIndex ?? 0,
@@ -153,6 +155,32 @@ const blockStyle = computed(() => {
                 ? "none"
                 : undefined,
     };
+});
+
+const blockRoot = ref(null);
+let resizeObserver = null;
+
+onMounted(() => {
+    const isTable = props.block.type === 'item_table' || props.block.type === 'table' || props.block.type === 'table_builder';
+    if (isTable) {
+        resizeObserver = new ResizeObserver((entries) => {
+            for (let entry of entries) {
+                const height = entry.target.offsetHeight;
+                if (height > 0) {
+                    blockStore.setBlockActualHeight(props.block.id, height / canvasStore.zoom);
+                }
+            }
+        });
+        if (blockRoot.value) {
+            resizeObserver.observe(blockRoot.value);
+        }
+    }
+});
+
+onUnmounted(() => {
+    if (resizeObserver) {
+        resizeObserver.disconnect();
+    }
 });
 
 // ─── Move & Edit ──────────────────────────────────────────────
@@ -394,6 +422,16 @@ function applyTableStyle(prop, val) {
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+function toggleEmptyRows() {
+    if (props.block.type === 'item_table') {
+        const current = props.block.showEmptyRows !== false;
+        blockStore.updateBlock(props.block.id, { 
+            showEmptyRows: !current,
+            showEmptyRowsInPreview: !current
+        });
+    }
+}
+
 // ─── Resize ───────────────────────────────────────────────────
 function onResizeStart(e, handle) {
     // For item_table, always allow resize even while in editing mode
@@ -533,11 +571,15 @@ const handleStyle = (handle) => {
 
 <template>
     <div
+        ref="blockRoot"
         :style="blockStyle"
         :class="[
             'canvas-block',
             {
                 selected: isSelected,
+                'multi-selected': isMultiSelected,
+                'editing': isEditing,
+                'is-page-break': block.type === 'page_break',
                 locked: block.locked,
                 'out-of-bounds': block._outOfBounds,
                 'print-hidden': block.hideOnPrint,
@@ -556,6 +598,9 @@ const handleStyle = (handle) => {
              <button class="tb-btn text-[#f59e0b]" title="Clear Selected Cells Content" @click.stop="clearSelectedCellsContent">Clear</button>
              <div class="tb-sep" />
              <button class="tb-btn" title="Merge Selected Cells" @click.stop="mergeTableCells">Merge</button>
+             <button class="tb-btn" title="Toggle Empty Rows" @click.stop="toggleEmptyRows">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12H3"></path><path d="M21 6H3"></path><path d="M21 18H3"></path></svg>
+             </button>
              <div class="tb-sep" />
              <button class="tb-btn" title="Bold Cells" @click.stop="applyTableStyle('bold')">B</button>
              <button class="tb-btn" title="Italic Cells" @click.stop="applyTableStyle('italic')">I</button>
@@ -668,5 +713,15 @@ const handleStyle = (handle) => {
     height: 14px;
     background: var(--color-panel-border);
     margin: 0 2px;
+}
+
+@media print {
+    .is-page-break {
+        page-break-after: always;
+        break-after: page;
+        height: 0 !important;
+        border: none !important;
+        background: transparent !important;
+    }
 }
 </style>

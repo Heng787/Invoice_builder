@@ -8,14 +8,18 @@ const previewStore = usePreviewStore();
 const blockStore = useBlockStore();
 const { translateUi } = useTranslateUi();
 
+// Local state
 const jsonText = ref(previewStore.rawJson);
 const applyError = ref("");
 
-// Keep local textbox synchronized with store changes
+// Keeps textarea in sync with store changes
 watch(() => previewStore.rawJson, (newVal) => {
     jsonText.value = newVal;
 });
 
+/**
+ * Applies JSON data to preview store
+ */
 function handleApply() {
     applyError.value = "";
     const res = previewStore.applyData(jsonText.value);
@@ -24,14 +28,18 @@ function handleApply() {
     }
 }
 
+/**
+ * Clears all preview data and resets JSON input
+ */
 function handleClear() {
     previewStore.clearData();
     jsonText.value = "{}";
     applyError.value = "";
 }
 
-// Find all unique binding keys defined across all blocks on the canvas
-// Find all unique single value binding keys
+/**
+ * Collects all single binding keys from non-table blocks
+ */
 const definedSingleBindings = computed(() => {
     const keys = new Set();
     blockStore.blocks.forEach(b => {
@@ -54,7 +62,9 @@ const definedSingleBindings = computed(() => {
     return Array.from(keys);
 });
 
-// Find all item table array sources and their bound column fields
+/**
+ * Extracts item table array sources and their bound columns
+ */
 const itemTableBindings = computed(() => {
     const list = [];
     blockStore.blocks.forEach(b => {
@@ -71,19 +81,19 @@ const itemTableBindings = computed(() => {
     return list;
 });
 
-// ✅ Matched fields list
+/**
+ * Lists fields that have matching data in preview
+ */
 const matchedFields = computed(() => {
     const list = [];
     const data = previewStore.previewData || {};
 
-    // Single value bindings matched
     definedSingleBindings.value.forEach(k => {
         if (k in data) {
             list.push({ key: k, displayKey: k, message: 'matched' });
         }
     });
 
-    // Array source bindings matched
     itemTableBindings.value.forEach(tb => {
         const val = data[tb.arraySource];
         if (val !== undefined && val !== null && Array.isArray(val)) {
@@ -98,7 +108,9 @@ const matchedFields = computed(() => {
     return list;
 });
 
-// ⚠️ Unused fields list
+/**
+ * Lists data fields not bound to any block
+ */
 const unusedFields = computed(() => {
     const list = [];
     const data = previewStore.previewData || {};
@@ -106,14 +118,12 @@ const unusedFields = computed(() => {
     const singleBindings = definedSingleBindings.value;
     const arraySources = itemTableBindings.value.map(tb => tb.arraySource);
 
-    // Unused root keys
     Object.keys(data).forEach(k => {
         if (!singleBindings.includes(k) && !arraySources.includes(k)) {
             list.push({ key: k, displayKey: k, message: 'not used' });
         }
     });
 
-    // Unused properties inside matched arrays
     itemTableBindings.value.forEach(tb => {
         const val = data[tb.arraySource];
         if (val !== undefined && val !== null && Array.isArray(val)) {
@@ -139,19 +149,19 @@ const unusedFields = computed(() => {
     return list;
 });
 
-// ❌ Missing fields list
+/**
+ * Lists bindings that have no matching data
+ */
 const missingFields = computed(() => {
     const list = [];
     const data = previewStore.previewData || {};
 
-    // Single value bindings missing
     definedSingleBindings.value.forEach(k => {
         if (!(k in data)) {
             list.push({ key: k, displayKey: k, message: 'no data' });
         }
     });
 
-    // Array sources missing or invalid
     itemTableBindings.value.forEach(tb => {
         const val = data[tb.arraySource];
         if (val === undefined || val === null || !Array.isArray(val)) {

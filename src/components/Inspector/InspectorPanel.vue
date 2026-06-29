@@ -34,6 +34,7 @@ const inspectorStore = useInspectorStore();
 const historyStore = useHistoryStore();
 const canvasStore = useCanvasStore();
 
+// Computed block state
 const block = computed(() => blockStore.selectedBlock);
 const isSelected = computed(() => !!block.value);
 const isFillMode = computed(() => canvasStore.fillMode);
@@ -50,12 +51,11 @@ const tabs = [
     { id: "history", label: "History" },
 ];
 
-// Tab visibility checks based on block type
+// Filter visible tabs based on block type and fill mode
 const visibleTabs = computed(() => {
     if (!isSelected.value) return [];
     const type = block.value.type;
 
-    // Fill mode: only position/size and block content fields are relevant
     if (isFillMode.value) {
         return tabs.filter((tab) => ["layout", "block"].includes(tab.id));
     }
@@ -81,7 +81,6 @@ const visibleTabs = computed(() => {
                 "watermark",
                 "totals_block",
                 "document_header",
-                "amount_in_words",
                 "receipt_header",
                 "receipt_footer",
             ].includes(type);
@@ -97,7 +96,6 @@ const visibleTabs = computed(() => {
                 "grand_total",
                 "balance_due",
                 "deposit_paid",
-                "amount_in_words",
                 "receipt_header",
                 "receipt_footer",
                 "signature_line",
@@ -136,7 +134,7 @@ const visibleTabs = computed(() => {
     });
 });
 
-// Auto-correct active tab if it's hidden for the selected block
+// Auto-correct active tab if hidden
 const activeTabId = computed(() => {
     const current = inspectorStore.activeTab;
     const visible = visibleTabs.value.map((t) => t.id);
@@ -146,29 +144,22 @@ const activeTabId = computed(() => {
     return current;
 });
 
+// Resolve active tab component
 const activeTabComponent = computed(() => {
     switch (activeTabId.value) {
-        case "style":
-            return StyleTab;
-        case "text":
-            return TextTab;
-        case "binding":
-            return BindingTab;
-        case "data":
-            return DataTab;
-        case "block":
-            return BlockTab;
-        case "responsive":
-            return ResponsiveTab;
-        case "history":
-            return HistoryTab;
+        case "style": return StyleTab;
+        case "text": return TextTab;
+        case "binding": return BindingTab;
+        case "data": return DataTab;
+        case "block": return BlockTab;
+        case "responsive": return ResponsiveTab;
+        case "history": return HistoryTab;
         case "layout":
-        default:
-            return LayoutTab;
+        default: return LayoutTab;
     }
 });
 
-// Actions
+// Block action functions
 function toggleLock() {
     if (!block.value) return;
     blockStore.updateBlock(block.value.id, { locked: !block.value.locked });
@@ -208,6 +199,13 @@ function moveToFront() {
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+function moveToBack() {
+    if (!block.value) return;
+    blockStore.sendToBack(block.value.id);
+    historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
+}
+
+// Format block type name
 const formatBlockName = (type) => {
     return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 };
@@ -300,21 +298,14 @@ const formatBlockName = (type) => {
 
                 <!-- Quick Actions -->
                 <div style="display: flex; gap: 4px">
-                    <!-- Lock/Unlock -->
                     <button
                         class="btn btn-ghost btn-icon"
-                        :data-tooltip="
-                            block.locked ? translateUi('Unlock Block') : translateUi('Lock Block')
-                        "
+                        :data-tooltip="block.locked ? translateUi('Unlock Block') : translateUi('Lock Block')"
                         @click="toggleLock"
                     >
-                        <component
-                            :is="block.locked ? Unlock : Lock"
-                            :size="13"
-                        />
+                        <component :is="block.locked ? Unlock : Lock" :size="13" />
                     </button>
 
-                    <!-- Duplicate -->
                     <button
                         class="btn btn-ghost btn-icon"
                         :data-tooltip="translateUi('Duplicate Block')"
@@ -324,7 +315,6 @@ const formatBlockName = (type) => {
                         <Copy :size="13" />
                     </button>
 
-                    <!-- Reordering -->
                     <button
                         class="btn btn-ghost btn-icon"
                         :data-tooltip="translateUi('Bring Forward')"
@@ -342,7 +332,6 @@ const formatBlockName = (type) => {
                         <ChevronDown :size="13" />
                     </button>
 
-                    <!-- Delete -->
                     <button
                         class="btn btn-ghost btn-icon text-danger"
                         :data-tooltip="translateUi('Delete Block')"
@@ -386,7 +375,7 @@ const formatBlockName = (type) => {
 .inspector-tabs {
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 180, 216, 0.3) transparent;
-    padding-bottom: 8px; /* Extra padding to prevent scrollbar overlapping active tab background */
+    padding-bottom: 8px;
 }
 
 .inspector-tabs::-webkit-scrollbar {

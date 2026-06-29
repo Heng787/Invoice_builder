@@ -14,10 +14,11 @@ const blockStore = useBlockStore();
 const previewStore = usePreviewStore();
 const settingsStore = useSettingsStore();
 
+// Display and binding state
 const displayText = computed(() => props.block.content ?? "");
-
 const isBound = computed(() => !!props.block.bindingKey);
 
+// Resolve bound value
 const resolvedValue = computed(() => {
     if (!isBound.value) return displayText.value;
     const key = props.block.bindingKey;
@@ -28,6 +29,7 @@ const resolvedValue = computed(() => {
     return props.block.bindingFallback ?? "";
 });
 
+// Format resolved value
 const formattedValue = computed(() => {
     const val = resolvedValue.value;
     const fmt = props.block.format;
@@ -40,6 +42,7 @@ const formattedValue = computed(() => {
     return formatValue(val, resolvedFmt);
 });
 
+// Format hint for design mode
 const formatHintText = computed(() => {
     const fmt = props.block.format;
     if (!fmt || fmt.type === 'general') return '';
@@ -62,6 +65,7 @@ const formatHintText = computed(() => {
     return typeCapitalized;
 });
 
+// Accounting format split helper
 function formatAccountingParts(value, format, fallbackSymbol = '$') {
   const num = parseFloat(value)
   if (isNaN(num)) return { left: '', right: String(value) }
@@ -84,8 +88,10 @@ function formatAccountingParts(value, format, fallbackSymbol = '$') {
   return { left: symbol, right: pos }
 }
 
+// Placeholder for binding key
 const getPlaceholder = (key) => key ? `{{${key}}}` : "";
 
+// Computed style for display mode
 const style = computed(() => ({
     width: "100%",
     height: "100%",
@@ -111,6 +117,7 @@ const style = computed(() => ({
     borderRadius: `${props.block.borderRadius ?? 0}px`,
 }));
 
+// Computed style for fill mode editable area
 const fillTextareaStyle = computed(() => ({
     width: "100%",
     height: "100%",
@@ -138,16 +145,19 @@ const fillTextareaStyle = computed(() => ({
 
 const editRef = ref(null);
 
+// Update block content
 function updateContent(val) {
     blockStore.updateBlock(props.block.id, { content: val });
 }
 
+// Initialize content on mount
 onMounted(() => {
     if (editRef.value) {
         editRef.value.innerHTML = props.block.content ?? "";
     }
 });
 
+// Sync content when prop changes
 watch(
     () => props.block.content,
     (newVal) => {
@@ -157,6 +167,7 @@ watch(
     }
 );
 
+// Focus and set cursor when fill mode activates
 watch(
     () => props.fillMode,
     (newVal) => {
@@ -167,7 +178,7 @@ watch(
                     const range = document.createRange();
                     const sel = window.getSelection();
                     range.selectNodeContents(editRef.value);
-                    range.collapse(false); // cursor to the end
+                    range.collapse(false);
                     sel.removeAllRanges();
                     sel.addRange(range);
                 }

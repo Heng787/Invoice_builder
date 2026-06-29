@@ -6,11 +6,13 @@ const props = defineProps({
     fillMode: { type: Boolean, default: false },
 });
 
+// Computed border style from block props
 const borderStyle = computed(() => {
     const { borderWidth, borderStyle = "solid", borderColor = "#000" } = props.block;
     return borderWidth ? `${borderWidth}px ${borderStyle} ${borderColor}` : "none";
 });
 
+// Computed style object from block props
 const style = computed(() => {
     const { 
         paddingTop = 4, 
@@ -48,6 +50,7 @@ const style = computed(() => {
     };
 });
 </script>
+
 <template>
     <div :style="style">
         <!-- Section Header (label) -->
@@ -127,7 +130,6 @@ const style = computed(() => {
         </div>
     </div>
 </template>
-
 
 <style scoped>
 .bank-label {

@@ -75,8 +75,8 @@ function updateBlockFormat(prop, val) {
 
 <template>
     <div class="tab-panel">
-        <!-- 1. Text & Single Value Blocks (text, amount_in_words, receipt_header, receipt_footer, barcode) -->
-        <div v-if="['text', 'amount_in_words', 'receipt_header', 'receipt_footer', 'barcode'].includes(block.type)" class="field-group">
+        <!-- 1. Text & Single Value Blocks (text, receipt_header, receipt_footer, barcode) -->
+        <div v-if="['text', 'receipt_header', 'receipt_footer', 'barcode'].includes(block.type)" class="field-group">
             <div class="field-label">{{ translateUi('Variable Binding') }}</div>
             
             <div class="field-single" style="margin-bottom: 12px;">
