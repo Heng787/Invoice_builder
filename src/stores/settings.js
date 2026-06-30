@@ -83,19 +83,9 @@ export const useSettingsStore = defineStore('settings', () => {
    
   function setCurrency(code) { currency.value = code }
 
-  /**
-   * Toggles the application theme
-   */
   function toggleTheme() {
     theme.value = theme.value === 'dark' ? 'light' : 'dark'
     localStorage.setItem('invoice_builder_theme', theme.value)
-    
-    // Apply class to document root
-    if (theme.value === 'light') {
-      document.documentElement.classList.add('light-theme')
-    } else {
-      document.documentElement.classList.remove('light-theme')
-    }
   }
 
   // Sets the document type

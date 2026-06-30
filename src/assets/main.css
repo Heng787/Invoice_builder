@@ -55,7 +55,11 @@
 /* ============================================================
    Light Theme Overrides
    ============================================================ */
-:root.light-theme {
+.light-theme {
+    /* Set background and color directly on the theme wrapper so it overrides the body */
+    background-color: var(--color-workspace);
+    color: var(--color-panel-text);
+
     /* Workspace colors */
     --color-workspace: #f3f4f6;
     --color-workspace-secondary: #ffffff;

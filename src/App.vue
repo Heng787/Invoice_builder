@@ -57,11 +57,6 @@ onMounted(() => {
   window.addEventListener('beforeprint', handleBeforePrint)
   window.addEventListener('afterprint', handleAfterPrint)
 
-  // Initialize theme class on mount
-  if (settingsStore.theme === 'light') {
-    document.documentElement.classList.add('light-theme')
-  }
-
   // Load draft from props or fallback to localStorage
   let draft = null;
   if (props.initialData) {
@@ -170,7 +165,7 @@ watch(
 </script>
 
 <template>
-  <div class="app-layout" :class="{ 'preview-mode-active': previewStore.isPreviewMode }">
+  <div class="app-layout" :class="{ 'light-theme': settingsStore.theme === 'light', 'preview-mode-active': previewStore.isPreviewMode }">
     <TopBar />
     <div class="app-main">
       <LeftPanel v-if="!previewStore.isPreviewMode" />
