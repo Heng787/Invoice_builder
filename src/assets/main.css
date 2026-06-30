@@ -865,7 +865,6 @@ select.inp option {
         margin: 0 !important;
     }
 
-    /* Hide all UI chrome, guide lines, selection highlights, etc. */
     .topbar,
     .app-main > aside,
     .zoom-controls,
@@ -880,13 +879,12 @@ select.inp option {
         visibility: hidden !important;
     }
 
-    /* Hide selection outlines in print */
     .canvas-block {
         outline: none !important;
         box-shadow: none !important;
+        overflow: visible !important;
     }
 
-    /* Synchronously force preview bindings visibility and hide design bindings in print */
     .preview-binding-only {
         display: block !important;
     }
@@ -894,7 +892,6 @@ select.inp option {
         display: none !important;
     }
 
-    /* Synchronously hide container outlines and helper labels in print */
     .container-renderer.no-custom-border {
         border: none !important;
     }
@@ -902,14 +899,12 @@ select.inp option {
         display: none !important;
     }
 
-    /* Reset app layout containers to static block flow so height collapses perfectly */
+
     html,
     body,
     #app,
     .app-layout,
-    .app-main,
-    .workspace,
-    .workspace > div {
+    .app-main {
         display: block !important;
         position: static !important;
         width: auto !important;
@@ -924,18 +919,25 @@ select.inp option {
         transform: none !important;
     }
 
-    /* The paper — preserve width/height inline styles, remove shadow and zoom scale transform */
+
+    .workspace {
+        display: block !important;
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: transparent !important;
+        transform: none !important;
+    }
+
+
     #canvas-paper {
         display: block !important;
         position: relative !important;
         box-shadow: none !important;
         transform: none !important;
         margin: 0 !important;
-        overflow: visible !important;
-    }
-
-    /* Ensure all blocks and their contents are visible */
-    .canvas-block {
         overflow: visible !important;
     }
 }

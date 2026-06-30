@@ -30,6 +30,11 @@ export const BLOCK_META = {
     name: "Container",
     description: "Group blocks together",
   },
+  box: {
+    icon: "SquareDot",
+    name: "Box",
+    description: "Rectangle with text & border",
+  },
 
   // Layout
   row: {

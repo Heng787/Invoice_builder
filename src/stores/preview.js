@@ -38,8 +38,11 @@ export const usePreviewStore = defineStore("preview", () => {
     isPreviewMode.value = val;
   }
 
+  const isPrinting = ref(false);
+
   return {
     isPreviewMode,
+    isPrinting,
     previewData,
     rawJson,
     applyData,

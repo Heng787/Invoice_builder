@@ -83,6 +83,7 @@ const visibleTabs = computed(() => {
                 "document_header",
                 "receipt_header",
                 "receipt_footer",
+                "box",
             ].includes(type);
         }
         if (tab.id === "binding") {
@@ -101,6 +102,7 @@ const visibleTabs = computed(() => {
                 "signature_line",
                 "item_table",
                 "barcode",
+                "box",
             ].includes(type);
         }
         if (tab.id === "data") {

@@ -34,12 +34,15 @@
   }
 }
 
+/* ==========================================================================
+   Dark Mode Theme Styles
+   ========================================================================== */
 @media (prefers-color-scheme: dark) {
   :root {
     --text: #9ca3af;
     --text-h: #f3f4f6;
     --bg: #16171d;
-    --border: #1e293b;  /* Your navy blue */
+    --border: #1e293b; 
     --code-bg: #1f2028;
     --accent: #c084fc;
     --accent-bg: rgba(192, 132, 252, 0.15);
@@ -47,7 +50,6 @@
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
 
-    /* ✅ ADD THESE HERE TOO */
     --color-panel: var(--border);
     --color-panel-border: var(--border);
     --color-panel-hover: var(--border);
@@ -59,12 +61,14 @@
   }
 }
 
+/* ==========================================================================
+   Standard Screen Application Layout 
+   ========================================================================== */
 body {
   margin: 0;
 }
 
-h1,
-h2 {
+h1, h2 {
   font-family: var(--heading);
   font-weight: 500;
   color: var(--text-h);
@@ -79,6 +83,7 @@ h1 {
     margin: 20px 0;
   }
 }
+
 h2 {
   font-size: 24px;
   line-height: 118%;
@@ -88,12 +93,12 @@ h2 {
     font-size: 20px;
   }
 }
+
 p {
   margin: 0;
 }
 
-code,
-.counter {
+code, .counter {
   font-family: var(--mono);
   display: inline-flex;
   border-radius: 4px;
@@ -129,9 +134,7 @@ code {
 .hero {
   position: relative;
 
-  .base,
-  .framework,
-  .vite {
+  .base, .framework, .vite {
     inset-inline: 0;
     margin: 0 auto;
   }
@@ -142,8 +145,7 @@ code {
     z-index: 0;
   }
 
-  .framework,
-  .vite {
+  .framework, .vite {
     position: absolute;
   }
 
@@ -151,8 +153,7 @@ code {
     z-index: 1;
     top: 34px;
     height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
+    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg) scale(1.4);
   }
 
   .vite {
@@ -160,8 +161,7 @@ code {
     top: 107px;
     height: 26px;
     width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
+    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg) scale(0.8);
   }
 }
 
@@ -286,8 +286,7 @@ code {
   position: relative;
   width: 100%;
 
-  &::before,
-  &::after {
+  &::before, &::after {
     content: '';
     position: absolute;
     top: -4.5px;
@@ -302,4 +301,4 @@ code {
     right: 0;
     border-right-color: var(--border);
   }
-}
+}

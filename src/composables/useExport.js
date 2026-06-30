@@ -11,7 +11,7 @@ import { useTemplateStore } from "../stores/template.js";
 import { usePreviewStore } from "../stores/preview.js";
 
 /**
- * Appends an anchor to the DOM, clicks it, then removes it after a frame.
+ * Creates and triggers a temporary download link
  */
 function triggerDownload(href, filename) {
   const a = document.createElement("a");
@@ -24,7 +24,7 @@ function triggerDownload(href, filename) {
 }
 
 /**
- * Captures the canvas paper at zoom 1 using html2canvas.
+ * Captures the canvas as an image at 100% zoom
  */
 async function captureCanvas(blockStore, canvasStore) {
   const paper = document.getElementById("canvas-paper");
@@ -63,6 +63,9 @@ async function captureCanvas(blockStore, canvasStore) {
   }
 }
 
+/**
+ * Restores canvas state after export capture
+ */
 function restoreCanvas({ paper, selectedBackup, backupZoom, backupPreview }, canvasStore, blockStore) {
   const previewStore = usePreviewStore();
   previewStore.isPreviewMode = backupPreview;
@@ -73,6 +76,9 @@ function restoreCanvas({ paper, selectedBackup, backupZoom, backupPreview }, can
 
 // ─── DOCX helpers ────────────────────────────────────────────────────────────
 
+/**
+ * Converts a block to DOCX paragraph elements
+ */
 function blockToDocxElements(block) {
   const elements = [];
 
@@ -142,6 +148,9 @@ function blockToDocxElements(block) {
   return elements;
 }
 
+/**
+ * Returns standard table border style for DOCX
+ */
 function tableBorders() {
   const b = { style: BorderStyle.SINGLE, size: 4, color: "aaaaaa" };
   return { top: b, bottom: b, left: b, right: b, insideHorizontal: b, insideVertical: b };
@@ -149,6 +158,9 @@ function tableBorders() {
 
 // ─── CSV helpers ─────────────────────────────────────────────────────────────
 
+/**
+ * Escapes a value for CSV format
+ */
 function csvEscape(val) {
   const s = String(val ?? "");
   return s.includes(",") || s.includes('"') || s.includes("\n")
@@ -156,6 +168,9 @@ function csvEscape(val) {
     : s;
 }
 
+/**
+ * Converts blocks to CSV format
+ */
 function blocksToCSV(blocks) {
   const lines = [];
   for (const block of blocks) {
@@ -173,16 +188,26 @@ function blocksToCSV(blocks) {
 
 // ─── Composable ──────────────────────────────────────────────────────────────
 
+/**
+ * Composable providing document export functionality (PDF, PNG, DOCX, CSV)
+ */
 export function useExport() {
   const blockStore = useBlockStore();
   const canvasStore = useCanvasStore();
   const templateStore = useTemplateStore();
 
+  /**
+   * Dispatches a custom event for export progress tracking
+   */
   function dispatch(event, detail = {}) {
     document.dispatchEvent(new CustomEvent(event, { detail }));
   }
 
   // ── PDF ──────────────────────────────────────────────────────
+  
+  /**
+   * Exports canvas as PDF
+   */
   async function handleExportPDF() {
     dispatch("export:start", { type: "pdf" });
     try {
@@ -219,6 +244,10 @@ export function useExport() {
   }
 
   // ── PNG ──────────────────────────────────────────────────────
+  
+  /**
+   * Exports canvas as PNG
+   */
   async function handleExportPNG() {
     dispatch("export:start", { type: "png" });
     try {
@@ -236,6 +265,10 @@ export function useExport() {
   }
 
   // ── DOCX ─────────────────────────────────────────────────────
+  
+  /**
+   * Exports blocks as DOCX
+   */
   async function handleExportDOCX() {
     dispatch("export:start", { type: "docx" });
     try {
@@ -260,6 +293,10 @@ export function useExport() {
   }
 
   // ── CSV ──────────────────────────────────────────────────────
+  
+  /**
+   * Exports table blocks as CSV
+   */
   function handleExportCSV() {
     dispatch("export:start", { type: "csv" });
     try {
@@ -276,6 +313,11 @@ export function useExport() {
     }
   }
 
+  // ── Lifecycle ──────────────────────────────────────────────────
+  
+  /**
+   * Registers export event listeners on mount
+   */
   onMounted(() => {
     document.addEventListener("canvas:export-pdf", handleExportPDF);
     document.addEventListener("canvas:export-png", handleExportPNG);
@@ -283,6 +325,9 @@ export function useExport() {
     document.addEventListener("canvas:export-csv", handleExportCSV);
   });
 
+  /**
+   * Removes export event listeners on unmount
+   */
   onUnmounted(() => {
     document.removeEventListener("canvas:export-pdf", handleExportPDF);
     document.removeEventListener("canvas:export-png", handleExportPNG);

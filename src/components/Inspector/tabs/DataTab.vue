@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed } from "vue";
 import { useBlockStore } from "../../../stores/blocks.js";
 import { useHistoryStore } from "../../../stores/history.js";

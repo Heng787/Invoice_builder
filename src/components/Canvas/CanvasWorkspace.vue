@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-// Tiny debounce helper (replaces lodash-es to avoid the extra dependency)
+
+/**
+ * Creates a debounced function that delays execution
+ */
 function debounce(fn, wait, { leading = false, trailing = true } = {}) {
   let timer = null
   function debounced(...args) {
@@ -12,6 +15,7 @@ function debounce(fn, wait, { leading = false, trailing = true } = {}) {
   debounced.cancel = () => clearTimeout(timer)
   return debounced
 }
+
 import { useCanvasStore } from '../../stores/canvas.js'
 import { useBlockStore } from '../../stores/blocks.js'
 import { useHistoryStore } from '../../stores/history.js'
@@ -22,6 +26,7 @@ import AlignmentGuides from './AlignmentGuides.vue'
 import CanvasBlock from './CanvasBlock.vue'
 import ContextMenu from './ContextMenu.vue'
 import { useSmartLayout } from '../../composables/useSmartLayout.js'
+import { nextTick } from 'vue'
 
 const canvasStore = useCanvasStore()
 const blockStore = useBlockStore()
@@ -63,16 +68,55 @@ const workspaceStyle = computed(() => ({
   cursor: isPanning.value ? 'grabbing' : (spaceHeld.value ? 'grab' : 'default')
 }))
 
+/**
+ * Computes the maximum bottom position of all blocks
+ */
+const maxContentBottom = computed(() => {
+  let maxBottom = 0;
+  blockStore.blocks.forEach(b => {
+    const y = smartPositions.value[b.id] ?? b.y;
+    const h = blockStore.actualHeights[b.id] || b.height;
+    if (y + h > maxBottom) {
+      maxBottom = y + h;
+    }
+  });
+  return maxBottom;
+})
+
+/**
+ * Computes the number of pages needed for preview mode
+ */
+const requiredPages = computed(() => {
+  const { height } = paperDims.value;
+  if (!height) return 1;
+  if (!previewStore.isPreviewMode) return 1;
+  const pages = Math.ceil(maxContentBottom.value / height);
+  return pages > 0 ? pages : 1;
+})
+
+/**
+ * Computes the paper element styles with multi-page support
+ */
 const paperStyle = computed(() => {
   const { width, height } = paperDims.value
   const z = zoom.value
+  const isPreview = previewStore.isPreviewMode
+  const isPrinting = previewStore.isPrinting
+  const pages = requiredPages.value
+  
+  // To avoid microscopic subpixel overflow that causes browsers to print a blank extra page,
+  // we restrict the exact pixel height to the bottom of the content during the print job.
+  const finalHeight = isPrinting ? Math.max(height, maxContentBottom.value) : height * pages
+  
   return {
     width: `${width}px`,
-    height: `${height}px`,
+    height: `${finalHeight}px`,
     transform: `scale(${z})`,
     transformOrigin: 'top left',
     position: 'relative',
-    background: 'var(--color-paper)',
+    background: isPreview && pages > 1 
+      ? `repeating-linear-gradient(to bottom, var(--color-paper) 0, var(--color-paper) calc(${height}px - 2px), rgba(0,0,0,0.15) calc(${height}px - 2px), rgba(0,0,0,0.15) ${height}px)` 
+      : 'var(--color-paper)',
     boxShadow: 'var(--shadow-paper)',
     overflow: 'hidden',
     flexShrink: 0,
@@ -80,38 +124,59 @@ const paperStyle = computed(() => {
   }
 })
 
+/**
+ * Computes the workspace content container styles with pan offset
+ */
 const workspaceContentStyle = computed(() => {
   const { width, height } = paperDims.value
   const z = zoom.value
+  const pages = requiredPages.value
+  
+  const currentHeight = height * pages
+
   return {
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'center',
     width: `${width * z}px`,
-    height: `${height * z}px`,
+    height: `${currentHeight * z}px`,
     minWidth: `${width * z}px`,
-    minHeight: `${height * z}px`,
+    minHeight: `${currentHeight * z}px`,
     transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
     transition: isPanning.value ? 'none' : 'transform 0.1s ease',
   }
 })
 
 // ─── Drop handling ───────────────────────────────────────────
+
+/**
+ * Handles file/block drop on canvas
+ */
 function handleDrop(e) {
   isDraggingOver.value = false
   onCanvasDrop(e, paperEl.value)
 }
 
+/**
+ * Handles drag over events on canvas
+ */
 function handleDragOver(e) {
   onCanvasDragOver(e)
   isDraggingOver.value = true
 }
 
+/**
+ * Handles drag leave events
+ */
 function handleDragLeave() {
   isDraggingOver.value = false
 }
 
 // ─── Pan (Space + drag) ───────────────────────────────────────
+
+/**
+ * Handles keydown for spacebar pan activation
+ */
 function onKeyDown(e) {
   if (e.code === 'Space' && !spaceHeld.value) {
     const tag = document.activeElement?.tagName
@@ -122,6 +187,9 @@ function onKeyDown(e) {
   }
 }
 
+/**
+ * Handles keyup for spacebar pan deactivation
+ */
 function onKeyUp(e) {
   if (e.code === 'Space') {
     spaceHeld.value = false
@@ -129,6 +197,9 @@ function onKeyUp(e) {
   }
 }
 
+/**
+ * Handles mousedown for pan and drag-select initiation
+ */
 function onMouseDown(e) {
   if (spaceHeld.value) {
     isPanning.value = true
@@ -152,6 +223,9 @@ function onMouseDown(e) {
   }
 }
 
+/**
+ * Handles mousemove for pan and drag-select updates
+ */
 function onMouseMove(e) {
   if (isPanning.value) {
     panOffset.value = {
@@ -169,6 +243,9 @@ function onMouseMove(e) {
   }
 }
 
+/**
+ * Handles mouseup for pan and drag-select finalization
+ */
 function onMouseUp() {
   if (isPanning.value) {
     isPanning.value = false
@@ -181,6 +258,9 @@ function onMouseUp() {
   }
 }
 
+/**
+ * Finalizes drag-select by selecting intersecting blocks
+ */
 function finalizeDragSelect() {
   const { startX, startY, endX, endY } = dragSelect.value
   const selX = Math.min(startX, endX)
@@ -202,11 +282,15 @@ function finalizeDragSelect() {
 }
 
 // ─── Scroll to zoom (debounced) ─────────────────────────────
+
 const onWheelDebounced = debounce((deltaY) => {
   const delta = deltaY > 0 ? -0.08 : 0.08
   canvasStore.setZoom(zoom.value + delta)
 }, 16, { leading: true, trailing: true })
 
+/**
+ * Handles wheel events for zoom (ctrl/cmd + scroll)
+ */
 function onWheel(e) {
   if (e.ctrlKey || e.metaKey) {
     e.preventDefault()
@@ -215,16 +299,27 @@ function onWheel(e) {
 }
 
 // ─── Context menu ─────────────────────────────────────────────
+
+/**
+ * Shows context menu at cursor position
+ */
 function showContextMenu(e, blockId) {
   e.preventDefault()
   contextMenu.value = { visible: true, x: e.clientX, y: e.clientY, blockId }
 }
 
+/**
+ * Hides context menu
+ */
 function hideContextMenu() {
   contextMenu.value.visible = false
 }
 
 // ─── Click outside to deselect ───────────────────────────────
+
+/**
+ * Handles click on workspace to deselect blocks
+ */
 function onWorkspaceClick(e) {
   if (e.target === workspaceEl.value || e.target === paperEl.value) {
     blockStore.clearSelection()
@@ -260,20 +355,107 @@ const events = [
   ['resize', () => {}] // Add any resize handlers
 ]
 
+let dynamicStyleEl = null
+let savedZoom = 1
+let originalPrint = null
+
+/**
+ * Saves current zoom before print
+ */
+function handleBeforePrint() {
+  savedZoom = canvasStore.zoom
+  canvasStore.setZoom(1)
+}
+
+/**
+ * Restores zoom after print
+ */
+function handleAfterPrint() {
+  canvasStore.setZoom(savedZoom)
+}
+
+/**
+ * Lifecycle: Mount - sets up event listeners and print override
+ */
 onMounted(() => {
   events.forEach(([event, handler]) => {
     window.addEventListener(event, handler)
   })
+  window.addEventListener('afterprint', handleAfterPrint)
+
+  // Override window.print globally to guarantee layout calculations run at 100% (zoom = 1)
+  originalPrint = window.print
+  window.print = async () => {
+    savedZoom = canvasStore.zoom
+    canvasStore.setZoom(1)
+    
+    await nextTick()
+
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    
+    originalPrint()
+  }
+
+  // Dynamically inject the @page CSS rule to match formatId & orientation
+  dynamicStyleEl = document.createElement('style')
+  dynamicStyleEl.id = 'dynamic-print-page-size'
+  document.head.appendChild(dynamicStyleEl)
+
+  watch(
+    [() => canvasStore.formatId, () => canvasStore.orientation],
+    ([formatId, orientation]) => {
+      if (!dynamicStyleEl) return
+      
+      let sizeStr = 'A4 portrait'
+      let marginStr = '15mm'
+      
+      if (formatId === 'A4') {
+        sizeStr = `A4 ${orientation}`
+        marginStr = '15mm'
+      } else if (formatId === 'A5') {
+        sizeStr = `A5 ${orientation}`
+        marginStr = '10mm'
+      } else if (formatId === 'RECEIPT_58') {
+        sizeStr = '58mm auto'
+        marginStr = '0mm'
+      } else if (formatId === 'RECEIPT_80') {
+        sizeStr = '80mm auto'
+        marginStr = '0mm'
+      }
+      
+      dynamicStyleEl.innerHTML = `
+        @page {
+          size: ${sizeStr};
+          margin: ${marginStr};
+        }
+      `
+    },
+    { immediate: true }
+  )
 })
 
+/**
+ * Lifecycle: Unmount - cleans up event listeners and print override
+ */
 onUnmounted(() => {
   events.forEach(([event, handler]) => {
     window.removeEventListener(event, handler)
   })
+  window.removeEventListener('afterprint', handleAfterPrint)
+  
+  if (originalPrint) {
+    window.print = originalPrint
+  }
+
   // Cancel any pending debounced calls
   onWheelDebounced.cancel?.()
+
+  if (dynamicStyleEl && dynamicStyleEl.parentNode) {
+    dynamicStyleEl.parentNode.removeChild(dynamicStyleEl)
+  }
 })
 </script>
+
 <template>
   <main
     ref="workspaceEl"
@@ -328,6 +510,7 @@ onUnmounted(() => {
     />
   </main>
 </template>
+
 <style scoped>
 .workspace::-webkit-scrollbar {
   width: 8px;

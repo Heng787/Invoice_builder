@@ -92,56 +92,74 @@ function formatAccountingParts(value, format, fallbackSymbol = '$') {
 const getPlaceholder = (key) => key ? `{{${key}}}` : "";
 
 // Computed style for display mode
-const style = computed(() => ({
-    width: "100%",
-    height: "100%",
-    padding: `${props.block.paddingTop ?? 2}px ${props.block.paddingRight ?? 4}px ${props.block.paddingBottom ?? 2}px ${props.block.paddingLeft ?? 4}px`,
-    fontFamily: props.block.fontFamily ?? "inherit",
-    fontSize: `${props.block.fontSize ?? 13}px`,
-    fontWeight: props.block.fontWeight ?? "normal",
-    fontStyle: props.block.fontStyle ?? "normal",
-    color: props.block.color ?? "#000000",
-    lineHeight: props.block.lineHeight ?? 1.5,
-    letterSpacing: `${props.block.letterSpacing ?? 0}px`,
-    textAlign: props.block.textAlign ?? "left",
-    textDecoration: props.block.textDecoration ?? "none",
-    textTransform: props.block.textTransform ?? "none",
-    backgroundColor: props.block.backgroundColor ?? "transparent",
-    whiteSpace: "pre-wrap",
-    wordBreak: "break-word",
-    overflow: "hidden",
-    boxSizing: "border-box",
-    border: props.block.borderWidth
-        ? `${props.block.borderWidth}px ${props.block.borderStyle ?? "solid"} ${props.block.borderColor ?? "#000"}`
-        : "none",
-    borderRadius: `${props.block.borderRadius ?? 0}px`,
-}));
+const style = computed(() => {
+    const isBox = props.block.type === 'box';
+    const vAlign = props.block.verticalAlign || (isBox ? 'middle' : 'top');
+    return {
+        width: "100%",
+        height: "100%",
+        padding: `${props.block.paddingTop ?? 2}px ${props.block.paddingRight ?? 4}px ${props.block.paddingBottom ?? 2}px ${props.block.paddingLeft ?? 4}px`,
+        fontFamily: props.block.fontFamily ?? "inherit",
+        fontSize: `${props.block.fontSize ?? 13}px`,
+        fontWeight: props.block.fontWeight ?? "normal",
+        fontStyle: props.block.fontStyle ?? "normal",
+        color: props.block.color ?? "#000000",
+        lineHeight: props.block.lineHeight ?? 1.5,
+        letterSpacing: `${props.block.letterSpacing ?? 0}px`,
+        textAlign: props.block.textAlign ?? "left",
+        textDecoration: props.block.textDecoration ?? "none",
+        textTransform: props.block.textTransform ?? "none",
+        backgroundColor: props.block.backgroundColor ?? "transparent",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+        overflow: "hidden",
+        boxSizing: "border-box",
+        border: props.block.borderWidth
+            ? `${props.block.borderWidth}px ${props.block.borderStyle ?? "solid"} ${props.block.borderColor ?? "#000"}`
+            : "none",
+        borderRadius: `${props.block.borderRadius ?? 0}px`,
+        
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: vAlign === 'top' ? 'flex-start' : (vAlign === 'bottom' ? 'flex-end' : 'center'),
+        alignItems: "stretch",
+    };
+});
 
 // Computed style for fill mode editable area
-const fillTextareaStyle = computed(() => ({
-    width: "100%",
-    height: "100%",
-    padding: `${props.block.paddingTop ?? 2}px ${props.block.paddingRight ?? 4}px ${props.block.paddingBottom ?? 2}px ${props.block.paddingLeft ?? 4}px`,
-    fontFamily: props.block.fontFamily ?? "inherit",
-    fontSize: `${props.block.fontSize ?? 13}px`,
-    fontWeight: props.block.fontWeight ?? "normal",
-    fontStyle: props.block.fontStyle ?? "normal",
-    color: props.block.color ?? "#000000",
-    lineHeight: props.block.lineHeight ?? 1.5,
-    letterSpacing: `${props.block.letterSpacing ?? 0}px`,
-    textAlign: props.block.textAlign ?? "left",
-    textDecoration: props.block.textDecoration ?? "none",
-    textTransform: props.block.textTransform ?? "none",
-    background: "transparent",
-    border: "1px solid rgba(0, 180, 216, 0.4)",
-    borderRadius: `${props.block.borderRadius ?? 0}px`,
-    outline: "none",
-    resize: "none",
-    boxSizing: "border-box",
-    whiteSpace: "pre-wrap",
-    wordBreak: "break-word",
-    overflow: "auto",
-}));
+const fillTextareaStyle = computed(() => {
+    const isBox = props.block.type === 'box';
+    const vAlign = props.block.verticalAlign || (isBox ? 'middle' : 'top');
+    return {
+        width: "100%",
+        height: "100%",
+        padding: `${props.block.paddingTop ?? 2}px ${props.block.paddingRight ?? 4}px ${props.block.paddingBottom ?? 2}px ${props.block.paddingLeft ?? 4}px`,
+        fontFamily: props.block.fontFamily ?? "inherit",
+        fontSize: `${props.block.fontSize ?? 13}px`,
+        fontWeight: props.block.fontWeight ?? "normal",
+        fontStyle: props.block.fontStyle ?? "normal",
+        color: props.block.color ?? "#000000",
+        lineHeight: props.block.lineHeight ?? 1.5,
+        letterSpacing: `${props.block.letterSpacing ?? 0}px`,
+        textAlign: props.block.textAlign ?? "left",
+        textDecoration: props.block.textDecoration ?? "none",
+        textTransform: props.block.textTransform ?? "none",
+        background: "transparent",
+        border: "1px solid rgba(0, 180, 216, 0.4)",
+        borderRadius: `${props.block.borderRadius ?? 0}px`,
+        outline: "none",
+        resize: "none",
+        boxSizing: "border-box",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+        overflow: "auto",
+        
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: vAlign === 'top' ? 'flex-start' : (vAlign === 'bottom' ? 'flex-end' : 'center'),
+        alignItems: "stretch",
+    };
+});
 
 const editRef = ref(null);
 

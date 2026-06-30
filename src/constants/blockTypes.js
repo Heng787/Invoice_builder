@@ -76,6 +76,7 @@ export const BLOCK_TYPES = Object.freeze({
   CARBON_COPY_LABEL: "carbon_copy_label",
   RECEIPT_HEADER: "receipt_header",
   RECEIPT_FOOTER: "receipt_footer",
+  BOX: "box",
 });
 
 export const BLOCK_CATEGORIES = [
@@ -83,7 +84,7 @@ export const BLOCK_CATEGORIES = [
     id: "content",
     label: "Text & Content",
     icon: "Type",
-    blocks: ["text", "image", "divider", "spacer", "checkboxes_row"],
+    blocks: ["text", "image", "divider", "spacer", "checkboxes_row", "box"],
   },
   {
     id: "layout",

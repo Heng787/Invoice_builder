@@ -169,6 +169,22 @@ export const BLOCK_DEFAULTS = {
     items: [],
   },
 
+  [BLOCK_TYPES.BOX]: {
+    ...BASE,
+    width: 150,
+    height: 40,
+    content: "Box",
+    ...TEXT_STYLE,
+    borderWidth: 1,
+    borderColor: "#000000",
+    borderStyle: "solid",
+    paddingTop: 8,
+    paddingRight: 8,
+    paddingBottom: 8,
+    paddingLeft: 8,
+    verticalAlign: "middle",
+  },
+
   [BLOCK_TYPES.TOTALS_BLOCK]: {
     ...BASE,
     width: 260,

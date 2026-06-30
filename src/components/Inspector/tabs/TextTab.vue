@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed } from "vue";
 import { useBlockStore } from "../../../stores/blocks.js";
 import { useHistoryStore } from "../../../stores/history.js";
@@ -223,6 +223,44 @@ function handleInput(prop, e, isNum = true) {
                             "
                             :size="14"
                         />
+                    </button>
+                </div>
+            </div>
+
+            <div class="field-single" style="margin-top: 10px">
+                <label
+                    style="
+                        font-size: 10px;
+                        color: var(--color-panel-muted);
+                        display: block;
+                        margin-bottom: 4px;
+                    "
+                    >{{ translateUi('Vertical Alignment') }}</label>
+                <div
+                    style="
+                        display: flex;
+                        gap: 2px;
+                        background: rgba(0, 0, 0, 0.15);
+                        padding: 2px;
+                        border-radius: 6px;
+                        border: 1px solid var(--color-panel-border);
+                    "
+                >
+                    <button
+                        v-for="vAlign in ['top', 'middle', 'bottom']"
+                        :key="vAlign"
+                        class="align-btn"
+                        :class="{
+                            active: (block.verticalAlign || (block.type === 'box' ? 'middle' : 'top')) === vAlign,
+                        }"
+                        :disabled="block.locked"
+                        style="font-size: 10px; font-weight: 500; text-transform: capitalize; padding: 4px 6px;"
+                        @click="
+                            updateProp('verticalAlign', vAlign);
+                            commitHistory();
+                        "
+                    >
+                        {{ translateUi(vAlign) }}
                     </button>
                 </div>
             </div>

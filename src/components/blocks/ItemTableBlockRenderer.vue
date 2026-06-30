@@ -709,8 +709,18 @@ function handleKeyDown(event) {
         else if (!event.shiftKey && colIdx < allCols.length - 1) selectAndEditCell(r, allCols[colIdx + 1].id);
     } else if (event.key === 'Enter') {
         event.preventDefault();
-        if (event.shiftKey && r > 0) selectAndEditCell(r - 1, colId);
-        else if (!event.shiftKey && r < allRows.value.length - 1) selectAndEditCell(r + 1, colId);
+        if (event.shiftKey && r > 0) {
+            selectAndEditCell(r - 1, colId);
+        } else if (!event.shiftKey) {
+            if (r < allRows.value.length - 1) {
+                selectAndEditCell(r + 1, colId);
+            } else {
+                addRowInline();
+                nextTick(() => {
+                    selectAndEditCell(r + 1, colId);
+                });
+            }
+        }
     } else if (event.key === 'Escape') { editingCell.value = null; blockStore.updateBlock(props.block.id, { selectedCells: [] }); }
 }
 
@@ -795,7 +805,7 @@ watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.query
 <template>
     <div style="width: 100%; overflow: visible">
         <table :style="tableStyle">
-            <thead v-if="block.showHeader !== false">
+            <thead v-if="block.showHeader !== false" style="position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                 <template v-if="hasHeaderGroups">
                     <tr>
                         <th v-for="h in topLevelHeaders" :key="h.id" :class="`col-${h.id}`" :colspan="h.colspan" :rowspan="h.rowspan" :style="{
@@ -848,23 +858,23 @@ watch(editingSpecialRowId, (newId) => { if (newId) nextTick(() => document.query
                             outline: isCellSelected(row.index, col.id) ? '2px solid #00b4d8' : undefined, outlineOffset: isCellSelected(row.index, col.id) ? '-2px' : undefined, cursor: fillMode ? 'default' : 'pointer',
                             ...(getCellCustomStyles(row.index, col).borderBottom ? { borderBottom: getCellCustomStyles(row.index, col).borderBottom } : {})
                         }" @mousedown="onCellMouseDown(row.index, col.id, $event)" @mouseenter="onCellMouseEnter(row.index, col.id)" @contextmenu="onCellContextMenu(row.index, col.id, $event)">
-                            <template v-if="row.isDataRow">
-                                <div v-if="col.id === 'no'" class="serial-cell">
-                                    <input v-if="fillMode && editingCell?.r === row.index && editingCell?.colId === col.id" :value="row.item[col.id]" class="inline-cell-input" @input="updateItemValue(row.localIndex, col.id, $event.target.value)" @blur="editingCell = null; commitHistory()" @keydown="handleKeyDown" />
-                                    <span v-else>{{ row.item[col.id] }}</span>
-                                    <button v-if="fillMode" class="inline-delete-row-btn" @click="deleteRowAction(row.localIndex)">&#x00D7;</button>
-                                </div>
-                                <template v-else>
-                                    <input v-if="fillMode && editingCell?.r === row.index && editingCell?.colId === col.id" :value="row.item[col.id]" class="inline-cell-input" @input="updateItemValue(row.localIndex, col.id, $event.target.value)" @blur="editingCell = null; commitHistory()" @keydown="handleKeyDown" />
+                                <template v-if="row.isDataRow">
+                                    <div v-if="col.id === 'no'" class="serial-cell">
+                                        <input v-if="fillMode && editingCell?.r === row.index && editingCell?.colId === col.id" :value="row.item[col.id]" class="inline-cell-input" @input="updateItemValue(row.localIndex, col.id, $event.target.value)" @blur="editingCell = null; commitHistory()" @keydown="handleKeyDown" />
+                                        <span v-else>{{ row.item[col.id] }}</span>
+                                        <button v-if="fillMode" class="inline-delete-row-btn" @click="deleteRowAction(row.localIndex)">&#x00D7;</button>
+                                    </div>
                                     <template v-else>
-                                        <div v-if="col.format?.type === 'accounting'" style="display: flex; justify-content: space-between; width: 100%; box-sizing: border-box; padding: 0 2px;">
-                                            <span>{{ formatAccountingParts(row.item[col.id], col.format, settingsStore.globalFormat.currencySymbol).left }}</span>
-                                            <span>{{ formatAccountingParts(row.item[col.id], col.format, settingsStore.globalFormat.currencySymbol).right }}</span>
-                                        </div>
-                                        <span v-else>{{ formatVal(col, row.item) }}</span>
+                                        <input v-if="fillMode && editingCell?.r === row.index && editingCell?.colId === col.id" :value="row.item[col.id]" class="inline-cell-input" @input="updateItemValue(row.localIndex, col.id, $event.target.value)" @blur="editingCell = null; commitHistory()" @keydown="handleKeyDown" />
+                                        <template v-else>
+                                            <div v-if="col.format?.type === 'accounting'" style="display: flex; justify-content: space-between; width: 100%; box-sizing: border-box; padding: 0 2px;">
+                                                <span>{{ formatAccountingParts(row.item[col.id], col.format, settingsStore.globalFormat.currencySymbol).left }}</span>
+                                                <span>{{ formatAccountingParts(row.item[col.id], col.format, settingsStore.globalFormat.currencySymbol).right }}</span>
+                                            </div>
+                                            <span v-else>{{ formatVal(col, row.item) }}</span>
+                                        </template>
                                     </template>
                                 </template>
-                            </template>
                         <div class="row-resizer" @mousedown.stop="onRowResizeStart(row.index, $event)"></div></td>
                     </template>
                 </tr>

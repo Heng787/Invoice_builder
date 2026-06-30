@@ -632,10 +632,11 @@ async function handlePrint() {
     canvasStore.setZoom(1);
     canvasStore.setFillMode(false);
     previewStore.isPreviewMode = true;
+    previewStore.isPrinting = true;
     
     // Wait for Vue's next tick and a short timeout to let the browser compute the layout reflow
     await nextTick();
-    await new Promise((r) => setTimeout(r, 150));
+    await new Promise((r) => setTimeout(r, 800));
     
     window.print();
     
@@ -644,6 +645,7 @@ async function handlePrint() {
         canvasStore.setZoom(backupZoom);
         canvasStore.setFillMode(backupFillMode);
         previewStore.isPreviewMode = backupPreview;
+        previewStore.isPrinting = false;
     }, 500);
 }
 

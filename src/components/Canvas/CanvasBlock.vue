@@ -53,6 +53,7 @@ const RENDERERS = {
     due_date: FieldRowBlockRenderer,
     reference_number: FieldRowBlockRenderer,
     item_table: ItemTableBlockRenderer,
+    box: TextBlockRenderer,
     totals_block: TotalsBlockRenderer,
     subtotal: TotalsBlockRenderer,
     discount: TotalsBlockRenderer,
@@ -96,13 +97,17 @@ const isSelected = computed(() => {
     if (previewStore.isPreviewMode) return false;
     return blockStore.selectedIds.includes(props.block.id);
 });
+
 const isMultiSelected = computed(
     () => blockStore.selectedIds.length > 1 && isSelected.value,
 );
+
 const renderer = computed(
     () => RENDERERS[props.block.type] ?? GenericBlockRenderer,
 );
+
 const isEditing = computed(() => canvasStore.editingBlockId === props.block.id);
+
 const hasPointerEvents = computed(() => {
     if (previewStore.isPreviewMode) return true;
     if (isEditing.value) return true;
@@ -124,6 +129,9 @@ const rotating = ref(false);
 const rotatePivot = ref({ cx: 0, cy: 0 });
 const rotateStart = ref({ angle: 0, blockRotation: 0 });
 
+/**
+ * Computes block positioning and styling with zoom and smart layout
+ */
 const blockStyle = computed(() => {
     const b = props.block;
     const z = canvasStore.zoom;
@@ -160,9 +168,17 @@ const blockStyle = computed(() => {
 const blockRoot = ref(null);
 let resizeObserver = null;
 
+/**
+ * Lifecycle: Mount - sets up resize observer for dynamic height blocks
+ */
 onMounted(() => {
-    const isTable = props.block.type === 'item_table' || props.block.type === 'table' || props.block.type === 'table_builder';
-    if (isTable) {
+    const hasDynamicHeight = [
+        'item_table', 'table', 'table_builder', 
+        'text', 'dynamic_text', 'notes', 'terms', 
+        'company_info', 'client_info', 'footer_note'
+    ].includes(props.block.type);
+
+    if (hasDynamicHeight) {
         resizeObserver = new ResizeObserver((entries) => {
             for (let entry of entries) {
                 const height = entry.target.offsetHeight;
@@ -177,6 +193,9 @@ onMounted(() => {
     }
 });
 
+/**
+ * Lifecycle: Unmount - cleans up resize observer
+ */
 onUnmounted(() => {
     if (resizeObserver) {
         resizeObserver.disconnect();
@@ -184,12 +203,19 @@ onUnmounted(() => {
 });
 
 // ─── Move & Edit ──────────────────────────────────────────────
+
+/**
+ * Handles double-click to edit block
+ */
 function onDblClick(e) {
     if (previewStore.isPreviewMode || props.block.locked) return;
     e.stopPropagation();
     canvasStore.editingBlockId = props.block.id;
 }
 
+/**
+ * Handles mousedown for selection, moving, and multi-select
+ */
 function onMouseDown(e) {
     if (previewStore.isPreviewMode) return;
     if (props.block.locked) return;
@@ -209,7 +235,6 @@ function onMouseDown(e) {
     }
 
     if (isSelected.value && !isEditing.value && props.block.type !== 'item_table') {
-        // Single click when already selected enters edit mode (not for tables — use dblclick)
         canvasStore.editingBlockId = props.block.id;
     }
 
@@ -274,6 +299,10 @@ function onMouseDown(e) {
 }
 
 // ─── Table Toolbar Actions ──────────────────────────────────
+
+/**
+ * Adds a new row to the table
+ */
 function addTableRow() {
     const newItems = JSON.parse(JSON.stringify(props.block.items ?? []));
     newItems.push({
@@ -289,6 +318,9 @@ function addTableRow() {
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+/**
+ * Adds a new column to the table
+ */
 function addTableColumn() {
     const columns = JSON.parse(JSON.stringify(props.block.columns || []));
     const newId = `col_${Date.now()}`;
@@ -302,6 +334,9 @@ function addTableColumn() {
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+/**
+ * Merges selected cells in the table
+ */
 function mergeTableCells() {
     const selected = props.block.selectedCells ?? [];
     if (selected.length < 2) return;
@@ -337,6 +372,9 @@ function mergeTableCells() {
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+/**
+ * Deletes selected rows from the table
+ */
 function deleteSelectedRows() {
     const selected = props.block.selectedCells ?? [];
     if (selected.length === 0) return;
@@ -360,6 +398,9 @@ function deleteSelectedRows() {
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+/**
+ * Deletes selected columns from the table
+ */
 function deleteSelectedColumns() {
     const selected = props.block.selectedCells ?? [];
     if (selected.length === 0) return;
@@ -372,6 +413,9 @@ function deleteSelectedColumns() {
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+/**
+ * Clears content of selected cells
+ */
 function clearSelectedCellsContent() {
     const selected = props.block.selectedCells ?? [];
     if (selected.length === 0) return;
@@ -391,6 +435,9 @@ function clearSelectedCellsContent() {
     }
 }
 
+/**
+ * Applies style to selected cells
+ */
 function applyTableStyle(prop, val) {
     const selected = props.block.selectedCells ?? [];
     if (selected.length === 0) return;
@@ -422,6 +469,9 @@ function applyTableStyle(prop, val) {
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+/**
+ * Toggles visibility of empty rows in table
+ */
 function toggleEmptyRows() {
     if (props.block.type === 'item_table') {
         const current = props.block.showEmptyRows !== false;
@@ -433,9 +483,11 @@ function toggleEmptyRows() {
 }
 
 // ─── Resize ───────────────────────────────────────────────────
+
+/**
+ * Handles resize start for block resizing
+ */
 function onResizeStart(e, handle) {
-    // For item_table, always allow resize even while in editing mode
-    // (the handle's mousedown.stop isolates the event from the table internals)
     if (isEditing.value && props.block.type !== 'item_table') return;
     e.stopPropagation();
     e.preventDefault();
@@ -486,18 +538,20 @@ function onResizeStart(e, handle) {
 }
 
 // ─── Rotate ───────────────────────────────────────────────────
+
+/**
+ * Handles rotation start for block rotation
+ */
 function onRotateStart(e) {
     if (isEditing.value) return;
     e.stopPropagation();
     e.preventDefault();
     rotating.value = true;
 
-    // Pivot = center of block in page coords
     const z = canvasStore.zoom;
     const cx = props.block.x * z + (props.block.width * z) / 2;
     const cy = props.block.y * z + (props.block.height * z) / 2;
 
-    // Get paper position
     const paper = document.getElementById("canvas-paper");
     const rect = paper.getBoundingClientRect();
     rotatePivot.value = { cx: rect.left + cx, cy: rect.top + cy };
@@ -516,7 +570,6 @@ function onRotateStart(e) {
         );
         const delta = (angle - startAngle) * (180 / Math.PI);
         let newRotation = Math.round(startRotation + delta);
-        // Snap to 15° if Shift held
         if (me.shiftKey) newRotation = Math.round(newRotation / 15) * 15;
         blockStore.updateBlock(props.block.id, { rotation: newRotation });
     };
@@ -534,6 +587,10 @@ function onRotateStart(e) {
 
 // Resize handle positions
 const handles = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+
+/**
+ * Returns style for a specific resize handle position
+ */
 const handleStyle = (handle) => {
     const pos = {
         nw: { top: "-4px", left: "-4px", cursor: "nw-resize" },
