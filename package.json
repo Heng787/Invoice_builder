@@ -1,8 +1,20 @@
 {
-  "name": "invoice-builder",
+  "name": "invoice-forge",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
+  "main": "./dist/invoice-forge.umd.js",
+  "module": "./dist/invoice-forge.es.js",
+  "exports": {
+    ".": {
+      "import": "./dist/invoice-forge.es.js",
+      "require": "./dist/invoice-forge.umd.js"
+    },
+    "./style.css": "./dist/invoice-forge.css"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -16,12 +28,16 @@
     "fabric": "^6.9.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
+    "tailwindcss": "^4.3.1"
+  },
+  "peerDependencies": {
     "pinia": "^3.0.4",
-    "tailwindcss": "^4.3.1",
     "vue": "^3.5.34"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.6",
-    "vite": "^8.0.12"
+    "pinia": "^3.0.4",
+    "vite": "^8.0.12",
+    "vue": "^3.5.34"
   }
 }

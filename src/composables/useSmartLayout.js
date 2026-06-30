@@ -30,22 +30,9 @@ export function useSmartLayout() {
       const baseHeight = b.height || 0
       let actualH = actualHeights[b.id] || baseHeight
       
-      // Adjust for print mode page breaks
-      const pageHeight = 1122
-      if (b.type === 'item_table' && actualH > 0) {
-        const startY = b.y || 0
-        const endY = startY + actualH
-        let pageBreaks = 0
-        for (let py = pageHeight; py < endY; py += pageHeight) {
-          if (py > startY) {
-            pageBreaks++
-          }
-        }
-        if (pageBreaks > 0 && usePreviewStore().isPrinting) {
-          actualH += pageBreaks * 38.5
-        }
-      }
-
+      // Adjust table height for print page breaks
+      actualH = adjustForPrintBreaks(b, actualH)
+      
       const expansion = Math.max(0, actualH - baseHeight)
 
       blockData[i] = {
@@ -78,7 +65,7 @@ export function useSmartLayout() {
           continue 
         }
 
-        // Push blocks that were designed below the above block's base
+        // Push blocks designed below the above block's base
         const aboveBaseBottom = above.designY + above.baseHeight
         
         if (current.designY >= aboveBaseBottom - 30) {
@@ -103,4 +90,36 @@ export function useSmartLayout() {
   })
 
   return { smartPositions }
+}
+
+/**
+ * Adjusts block height for print page breaks
+ */
+function adjustForPrintBreaks(block, actualHeight) {
+  const PAGE_HEIGHT = 1122
+  const HEADER_HEIGHT = 38.5 // Approximate table header height per page break
+  
+  if (block.type !== 'item_table' || actualHeight <= 0) {
+    return actualHeight
+  }
+  
+  const previewStore = usePreviewStore()
+  
+  if (!previewStore.isPrinting) {
+    return actualHeight
+  }
+  
+  const startY = block.y || 0
+  const endY = startY + actualHeight
+  
+  // Count page breaks within the block's vertical span
+  let pageBreaks = 0
+  for (let pageY = PAGE_HEIGHT; pageY < endY; pageY += PAGE_HEIGHT) {
+    if (pageY > startY) {
+      pageBreaks++
+    }
+  }
+  
+  // Add extra height for repeated headers on each page break
+  return actualHeight + (pageBreaks * HEADER_HEIGHT)
 }

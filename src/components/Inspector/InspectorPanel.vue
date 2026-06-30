@@ -51,7 +51,9 @@ const tabs = [
     { id: "history", label: "History" },
 ];
 
-// Filter visible tabs based on block type and fill mode
+/**
+ * Filters visible tabs based on block type and fill mode
+ */
 const visibleTabs = computed(() => {
     if (!isSelected.value) return [];
     const type = block.value.type;
@@ -136,7 +138,9 @@ const visibleTabs = computed(() => {
     });
 });
 
-// Auto-correct active tab if hidden
+/**
+ * Auto-corrects active tab if currently hidden
+ */
 const activeTabId = computed(() => {
     const current = inspectorStore.activeTab;
     const visible = visibleTabs.value.map((t) => t.id);
@@ -146,7 +150,9 @@ const activeTabId = computed(() => {
     return current;
 });
 
-// Resolve active tab component
+/**
+ * Resolves active tab component based on current tab ID
+ */
 const activeTabComponent = computed(() => {
     switch (activeTabId.value) {
         case "style": return StyleTab;
@@ -162,12 +168,19 @@ const activeTabComponent = computed(() => {
 });
 
 // Block action functions
+
+/**
+ * Toggles block lock state
+ */
 function toggleLock() {
     if (!block.value) return;
     blockStore.updateBlock(block.value.id, { locked: !block.value.locked });
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+/**
+ * Duplicates the selected block
+ */
 function handleDuplicate() {
     if (!block.value) return;
     const dup = blockStore.duplicateBlock(block.value.id);
@@ -177,37 +190,54 @@ function handleDuplicate() {
     }
 }
 
+/**
+ * Deletes the selected block
+ */
 function handleDelete() {
     if (!block.value) return;
     blockStore.removeBlock(block.value.id);
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+/**
+ * Moves selected block up in z-order
+ */
 function moveUp() {
     if (!block.value) return;
     blockStore.bringForward(block.value.id);
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+/**
+ * Moves selected block down in z-order
+ */
 function moveDown() {
     if (!block.value) return;
     blockStore.sendBackward(block.value.id);
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+/**
+ * Brings selected block to front
+ */
 function moveToFront() {
     if (!block.value) return;
     blockStore.bringToFront(block.value.id);
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
+/**
+ * Sends selected block to back
+ */
 function moveToBack() {
     if (!block.value) return;
     blockStore.sendToBack(block.value.id);
     historyStore.push(JSON.parse(JSON.stringify(blockStore.blocks)));
 }
 
-// Format block type name
+/**
+ * Formats block type name for display
+ */
 const formatBlockName = (type) => {
     return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 };

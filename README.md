@@ -1,109 +1,106 @@
-# InvoiceForge — Invoice & Document Builder
+# InvoiceForge — Vue Component Library
 
-A browser-based tool for creating professional invoices, receipts, quotes, and other business documents — **no coding required**.
+A professional, browser-based drag-and-drop document builder packaged as a Vue 3 component library. 
+Easily embed a fully-featured invoice, receipt, and quote designer directly into your own web applications — **no backend required**.
 
 ---
 
 ## What It Does
 
-InvoiceForge lets users design and export document templates visually using a drag-and-drop canvas. Think of it like a simple version of Canva, but specifically built for business documents.
+InvoiceForge lets your users design and export document templates visually using a drag-and-drop canvas. Think of it like a simple version of Canva, but specifically built for business documents.
 
 **Key capabilities:**
 - 🖱️ **Drag-and-drop editor** — add, move, and resize content blocks on a canvas
 - 🗂️ **Ready-made templates** — Invoice, Receipt, Quote, Purchase Order, Delivery Note, and more
 - 🖨️ **Export to PDF, PNG, or JSON** — ready to print or share
-- 💾 **Save templates** — store and reload designs in the browser
+- 💾 **Data binding** — Easily load initial JSON data in and receive the updated JSON payload via standard Vue events (`@save`).
 - 🌐 **English ↔ Khmer translation** — one-click language switch with automatic currency change (USD ↔ KHR)
 - 📐 **Multiple paper sizes** — A4, A5, 58mm and 80mm thermal receipts
 
 ---
 
-## Document Types Supported
+## Installation & Integration
 
-| Type | Description |
-|---|---|
-| Invoice | Standard billing document |
-| Sale Order | Sales order with delivery fields |
-| Receipt | Payment receipt with thank-you message |
-| Quote | Quotation with validity and terms |
-| Delivery Note | Shipping document with item conditions |
-| Purchase Order | Buyer/seller purchase document |
-| Credit Note | Refund and credit document |
-| Custom | Blank canvas, build from scratch |
+InvoiceForge is distributed as an NPM package that can be seamlessly embedded in any Vue 3 application.
+
+### 1. Install
+
+```bash
+npm install invoice-forge
+```
+
+> **⚠️ Important Requirement: Pinia**
+> InvoiceForge relies on `pinia` for internal state management. If your host application doesn't already use Pinia, you MUST install it and add it to your Vue app before mounting the component.
+> ```javascript
+> // main.js in your host app
+> import { createApp } from 'vue'
+> import { createPinia } from 'pinia'
+> import App from './App.vue'
+> 
+> const app = createApp(App)
+> app.use(createPinia()) // REQUIRED
+> app.mount('#app')
+> ```
+
+### 2. Embed in your App
+
+Import the component and the bundled CSS. You can pass your existing saved invoice templates via the `:initial-data` prop, and catch updates when the user clicks save via the `@save` event.
+
+```vue
+<script setup>
+import { InvoiceForge } from 'invoice-forge'
+import 'invoice-forge/style.css' // Required: injects the isolated Tailwind CSS
+
+// Load your user's existing template from your database
+const existingInvoiceData = {
+  // ... document schema ...
+}
+
+function handleSave(invoiceData) {
+  // invoiceData contains the full JSON schema of the document.
+  // Save it back to your database!
+  console.log('Saved document data:', invoiceData)
+}
+</script>
+
+<template>
+  <div class="h-screen w-full">
+    <!-- Embed the builder -->
+    <InvoiceForge 
+      :initial-data="existingInvoiceData" 
+      @save="handleSave" 
+    />
+  </div>
+</template>
+```
+
+> **⚠️ Important Requirement: Sizing**
+> InvoiceForge fills 100% width and height of its parent container. The host application **must** give the wrapping element explicit dimensions (e.g., `h-screen` or a fixed pixel height), otherwise the builder will collapse and break.
 
 ---
 
-## How to Run (for developers)
+## Prop & Event API
 
-**Requirements:** Node.js installed
+### Props
+- `:initial-data` (Object): The JSON schema of the document template. If provided, the builder treats this as the source of truth. If omitted, the builder will fall back to using an internal `localStorage` draft mechanism as a safety net.
+  - *Note: `initial-data` is only read once on mount. To load a different document, you must remount the component using a `:key` binding.*
 
-```bash
-# Install dependencies
-npm install
-
-# Start the app locally
-npm run dev
-```
-
-Then open `http://localhost:5173` in a browser.
-
-To build for production:
-```bash
-npm run build
-```
-
----
-
-## How to Use
-
-### 1. Pick a Document Type
-Select a document type from the top bar (e.g. **Invoice**, **Receipt**, **Quote**). A ready-made layout will load automatically on the canvas.
-
-### 2. Add & Arrange Blocks
-Browse the **block library** on the left panel. Drag any block onto the canvas — text, tables, images, signatures, QR codes, and more. Blocks can be freely moved, resized, and rotated.
-
-### 3. Edit Content
-Click any block on the canvas to open the **Inspector Panel** on the right. From there you can:
-- Edit text, labels, and values
-- Change fonts, colors, borders, and padding
-- Control position and size with exact pixel values
-- Show or hide individual fields
-
-### 4. Configure Document Settings
-Use the **top bar** to set:
-- Company name and currency
-- Paper size (A4, A5, 58mm / 80mm receipt)
-- Page orientation (Portrait / Landscape)
-- Global font and font size
-
-### 5. Save Your Template
-Click **Save** in the top bar, give the template a name, and it will be stored in your browser. You can reload it anytime. To back it up, use **Export → JSON** to download the template file.
-
-### 6. Export or Print
-When the document is ready:
-- **Print** — opens the browser print dialog
-- **Export PDF** — saves a print-quality PDF
-- **Export PNG** — saves the canvas as an image
-
-### Tips
-- Use **Preview Mode** (canvas toolbar) to see the document filled with sample data
-- Use **Fill Mode** to type directly onto the canvas instead of using the inspector
-- Press `Ctrl+Z` / `Ctrl+Shift+Z` to undo / redo any change
-- Click **Translate** to switch all text between **English and Khmer** instantly
+### Events
+- `@save(data)`: Emitted when the user triggers a save (e.g., clicking the Save button or using `Ctrl+S`). The payload `data` is the complete JSON schema representing the canvas layout, blocks, and settings.
+  - *Note: PDF/PNG export happens entirely inside the component's own UI (Export button) and downloads directly in the browser. It does NOT emit an event back to the host app. Only `@save` emits data back.*
 
 ---
 
 ## Tech Overview
 
-Built with modern, lightweight web technologies — no server or database required.
+Built with modern, lightweight web technologies. The library output is fully bundled and isolated so it will not clash with your host application's styling.
 
 | Layer | Technology |
 |---|---|
 | Framework | Vue 3 |
-| Build Tool | Vite |
-| State | Pinia |
+| State | Pinia (Peer Dependency) |
+| Styling | Tailwind CSS (Bundled in `style.css`) |
 | Export | Browser Print API (PDF), Canvas API (PNG) |
-| Storage | Browser localStorage |
 
 ---
 
