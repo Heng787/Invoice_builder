@@ -57,6 +57,11 @@ onMounted(() => {
   window.addEventListener('beforeprint', handleBeforePrint)
   window.addEventListener('afterprint', handleAfterPrint)
 
+  // Initialize theme class on mount
+  if (settingsStore.theme === 'light') {
+    document.documentElement.classList.add('light-theme')
+  }
+
   // Load draft from props or fallback to localStorage
   let draft = null;
   if (props.initialData) {

@@ -31,6 +31,8 @@ import {
     Underline,
     Strikethrough,
     Sliders,
+    Moon,
+    Sun,
 } from "@lucide/vue";
 
 import ConfirmModal from "../common/ConfirmModal.vue";
@@ -1048,6 +1050,16 @@ function execFormatting(command, value = null) {
                     "
                 >
                     <SwitchCamera :size="14" />
+                </button>
+
+                <!-- Theme Toggle -->
+                <button
+                    class="btn btn-ghost btn-icon"
+                    data-tooltip="Toggle Dark/Light Mode"
+                    @click="settingsStore.toggleTheme"
+                >
+                    <Moon v-if="settingsStore.theme === 'light'" :size="14" />
+                    <Sun v-else :size="14" />
                 </button>
 
                 <div class="topbar-sep" />

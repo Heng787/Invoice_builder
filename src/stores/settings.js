@@ -36,11 +36,13 @@ const FONTS = [
   { name: 'Times New Roman', value: '"Times New Roman", serif' },
 ]
 
-const DOCUMENT_TYPES = [
-  'Custom',
-]
+const DOCUMENT_TYPES = ['Custom']
 
+/**
+ * Pinia store for application settings (company, currency, fonts, etc.)
+ */
 export const useSettingsStore = defineStore('settings', () => {
+  // State
   const company = ref('My Company')
   const documentType = ref('Custom')
   const currency = ref('USD')
@@ -48,6 +50,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const globalFontSize = ref(13)
 
   const language = ref(localStorage.getItem('invoice_builder_lang') || 'en')
+  const theme = ref(localStorage.getItem('invoice_builder_theme') || 'dark')
   const currencies = ref(CURRENCIES)
   const fonts = ref(FONTS)
   const documentTypes = ref(DOCUMENT_TYPES)
@@ -59,6 +62,7 @@ export const useSettingsStore = defineStore('settings', () => {
     dateFormat: 'DD/MM/YYYY'
   })
 
+  // Update currency symbol when currency changes
   watch(currency, (newCode) => {
     const cur = CURRENCIES.find(c => c.code === newCode)
     if (cur) {
@@ -66,22 +70,79 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }, { immediate: true })
 
+  // Actions
+
+  // Sets the application language
+   
   function setLanguage(lang) {
     language.value = lang
     localStorage.setItem('invoice_builder_lang', lang)
   }
+
+  // Sets the currency code
+   
   function setCurrency(code) { currency.value = code }
+
+  /**
+   * Toggles the application theme
+   */
+  function toggleTheme() {
+    theme.value = theme.value === 'dark' ? 'light' : 'dark'
+    localStorage.setItem('invoice_builder_theme', theme.value)
+    
+    // Apply class to document root
+    if (theme.value === 'light') {
+      document.documentElement.classList.add('light-theme')
+    } else {
+      document.documentElement.classList.remove('light-theme')
+    }
+  }
+
+  // Sets the document type
+ 
   function setDocumentType(type) { documentType.value = type }
+
+
+  // Sets the global font
+  
   function setGlobalFont(font) { globalFont.value = font }
+
+  // Sets the global font size
+ 
   function setGlobalFontSize(size) { globalFontSize.value = size }
+
+  // Sets the company name
+ 
   function setCompany(name) { company.value = name }
 
-  const currentCurrency = () => CURRENCIES.find(c => c.code === currency.value) ?? CURRENCIES[0]
+  
+  // Returns the current currency object
+   
+  function currentCurrency() {
+    return CURRENCIES.find(c => c.code === currency.value) ?? CURRENCIES[0]
+  }
 
   return {
-    company, documentType, currency, globalFont, globalFontSize, language,
-    currencies, fonts, documentTypes, globalFormat,
-    setCurrency, setDocumentType, setGlobalFont, setGlobalFontSize, setCompany, setLanguage,
+    // State
+    company,
+    documentType,
+    currency,
+    globalFont,
+    globalFontSize,
+    language,
+    theme,
+    currencies,
+    fonts,
+    documentTypes,
+    globalFormat,
+    // Actions
+    setCurrency,
+    setDocumentType,
+    setGlobalFont,
+    setGlobalFontSize,
+    setCompany,
+    setLanguage,
+    toggleTheme,
     currentCurrency,
   }
 })
